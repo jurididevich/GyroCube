@@ -1,0 +1,166 @@
+<jittershader>
+	<param name="position" type="vec3" state="POSITION" />
+	<param name="texcoord" type="vec2" state="TEXCOORD" />
+	<param name="instance_position" type="vec4" state="VERTEX_ATTR0" />
+	<param name="instance_tc" type="vec4" state="VERTEX_ATTR1" />
+	<param name="modelViewProjectionMatrix" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="modelViewMatrix" type="mat4" state="MODELVIEW_MATRIX" /> 
+	<param name="textureMatrix0" type="mat4" state="TEXTURE0_MATRIX" />
+	<param name="normal" type="vec3" state="NORMAL" /> 
+	<param name="FrontMaterialParameters" state="FRONT_MATERIAL" />
+	<param name="LightingParameters" state="LIGHT" />
+	<param name="colorize" type="vec4" default = "0 1 2 0" />
+	<param name="tex0" type="int" default="0" />
+	<language name="glsl" version="1.5">
+		<bind param="position" program="vp" />
+		<bind param="texcoord" program="vp" />
+		<bind param="instance_position" program="vp" />
+		<bind param="instance_tc" program="vp" />
+		<bind param="modelViewProjectionMatrix" program="vp" />
+		<bind param="modelViewMatrix" program="vp" />
+		<bind param="textureMatrix0" program="vp" />
+		<bind param="normal" program="vp" />
+		<bind param="FrontMaterialParameters" program="vp" />
+		<bind param="LightingParameters" program="vp" />		
+		<bind param="colorize" program="vp" />
+		<bind param="tex0" program="fp" />
+		<program name="vp" type="vertex">
+<![CDATA[
+// Preprocessor
+#version 330 core
+
+// Definitions
+struct MaterialParameters {
+	vec4 emission;
+	vec4 ambient;
+	vec4 diffuse;
+	vec4 specular;
+	float shininess;
+};
+
+struct LightModelParameters {
+	vec4 ambient;
+};
+
+struct LightSourceParameters {
+	vec4 ambient;
+	vec4 diffuse;
+	vec4 specular;
+	vec4 position;
+	vec3 spotDirection;
+	float spotExponent;
+	float spotCutoff;
+	float spotCosCutoff;
+	float constantAttenuation;
+	float linearAttenuation;
+	float quadraticAttenuation;
+};
+
+// Uniforms
+layout (std140) uniform FrontMaterialParameters {
+	MaterialParameters frontMaterial;
+};
+
+#define NUM_LIGHTS (1)
+layout (std140) uniform LightingParameters {
+	LightModelParameters lightModel;
+	LightSourceParameters light[NUM_LIGHTS];
+};
+
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 textureMatrix0;
+
+uniform vec4 colorize;
+
+// Attributes
+in vec3 position;
+in vec2 texcoord;
+in vec4 col;
+in vec3 normal;
+in vec4 instance_position;
+in vec4 instance_tc;
+
+// Output
+out jit_PerVertex {
+	vec4 color;
+	vec2 texcoord;
+} jit_out;
+
+
+float lambertian(vec3 Nn, vec3 L) {
+	return max(dot(Nn, L), 0.);
+}
+
+float blinn(vec3 Vn, vec3 Nn, vec3 L, float Ns) {
+	vec3 H = normalize(L + Vn);
+	return pow(max(dot(Nn, H), 0.), Ns);
+}
+
+vec4 calc_directional_light(vec3 Vn, vec3 Nn, vec3 pos, MaterialParameters mtl, LightSourceParameters light) {
+	vec3 L = normalize(light.position.xyz);
+	vec4 res_color = mtl.ambient*light.ambient;
+	res_color += mtl.diffuse*light.diffuse*lambertian(Nn, L);
+	res_color += mtl.specular*light.specular*blinn(Vn, Nn, L, mtl.shininess);
+	return res_color;
+}
+
+void main() {
+	
+	// construct the position value from the geometry position scaled by the instance scale value 
+	// and added with the instance position values
+	vec3 pos = (position * instance_position.w) + instance_position.xyz;
+	gl_Position = modelViewProjectionMatrix * vec4(pos, 1.);	
+	mat4 mvMatrix = modelViewMatrix;
+	
+	
+	// lighting calculations
+	vec3 eyePosition = (mvMatrix*vec4(pos, 1.)).xyz;
+	vec3 Vn = normalize(-eyePosition);
+	
+	mat3 mv33 = mat3x3(mvMatrix);
+	mv33[0] = normalize(mv33[0]);
+	mv33[1] = normalize(mv33[1]);
+	mv33[2] = normalize(mv33[2]);
+	mat3 normalMatrix = transpose(inverse(mv33));
+	vec3 Nn = normalMatrix*normalize(normal);
+	
+	vec3 cos_color = (0.5 + 0.5 * cos( (gl_InstanceID/100.)* 6.2831 + colorize.rgb)) * colorize.a + (1 - colorize.a);
+	
+	vec4 lit_color = frontMaterial.emission + frontMaterial.ambient*lightModel.ambient;
+	lit_color += calc_directional_light(Vn, Nn, eyePosition, frontMaterial, light[0]);
+	jit_out.color = lit_color * vec4(cos_color, 1);	
+	
+	// tex_map 1 calculation using the instance texplane_s/t values
+	float s = dot(vec4(position, 1.), vec4(instance_tc.x, 0., 0., instance_tc.y));
+	float t = dot(vec4(position, 1.), vec4(0., instance_tc.z, 0., instance_tc.w));
+	jit_out.texcoord = vec2(textureMatrix0*vec4(s, t, 0., 1.));
+}
+
+
+]]>
+		</program>
+
+		<program name="fp" type="fragment">
+<![CDATA[
+#version 330 core
+
+in jit_PerVertex {
+	vec4 color;
+	vec2 texcoord;
+	
+	
+} jit_in;
+out vec4 color;
+uniform sampler2DRect tex0;
+
+void main() {
+	color = jit_in.color;
+	color *= texture(tex0, jit_in.texcoord);
+
+}	
+
+]]>
+		</program>
+	</language>
+</jittershader>

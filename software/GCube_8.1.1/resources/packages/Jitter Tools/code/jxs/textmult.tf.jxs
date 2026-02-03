@@ -1,0 +1,141 @@
+<jittershader name="TFLocomotion">
+	<description>Multiple Text TF Shader</description>
+
+	<param name="iVertices"    type="vec3" state="POSITION" />
+	<param name="iNormals"     type="vec3" state="NORMAL" />
+	<param name="iOrigVertices_indices"    type="vec4" state="VERTEX_ATTR0" />
+	<param name="iOrigNormals" type="vec3" state="VERTEX_ATTR1" />
+	<param name="iColor"       type="vec4" state="COLOR" />
+
+	<param name="paramsTex"    type="int" default="0" />
+
+	<param name="u_color_mat_dim"   type="int" default="1" />
+	<param name="u_scale_mat_dim"   type="int" default="1" />
+	<param name="u_rotatexyz_mat_dim" type="int" default="1" />
+	<param name="u_rotate_mat_dim"  type="int" default="1" />
+
+	<language name="glsl" version="1.5">
+
+		<bind param="iVertices"     program="vp" />
+		<bind param="iNormals"      program="vp" />
+		<bind param="iOrigVertices_indices" program="vp" />
+		<bind param="iOrigNormals"  program="vp" />
+		<bind param="iColor"        program="vp" />
+
+		<bind param="paramsTex"     program="vp" />
+
+		<bind param="u_color_mat_dim"   program="vp" />
+		<bind param="u_scale_mat_dim"   program="vp" />
+		<bind param="u_rotatexyz_mat_dim" program="vp" />
+		<bind param="u_rotate_mat_dim"  program="vp" />
+
+		<program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+
+in vec3 iVertices;
+in vec3 iNormals;
+in vec4 iOrigVertices_indices;
+in vec3 iOrigNormals;
+in vec4 iColor;
+
+uniform sampler2DRect paramsTex;
+
+uniform int u_color_mat_dim;
+uniform int u_scale_mat_dim;
+uniform int u_rotatexyz_mat_dim;
+uniform int u_rotate_mat_dim;
+
+out vec3 oVertices;
+out vec3 oNormals;
+out vec4 oColor;
+
+// Identity matrix.
+mat4 identity() {
+    return mat4(
+        vec4(1, 0, 0, 0.),
+        vec4(0, 1, 0, 0.),
+        vec4(0, 0, 1, 0.),
+		vec4(0, 0, 0., 1.)
+    );
+}
+
+// Rotate around arbitrary axis
+mat3 rotationMatrix(vec3 axis, float angle)
+{	
+	angle *= -1.0;
+	float tempAngle = angle * 3.14159 / 180.0;
+	if (axis.x != 0.0 || axis.y != 0.0 || axis.z != 0.0) {
+		axis = normalize(axis);
+		float s = sin(tempAngle);
+		float c = cos(tempAngle);
+		float oc = 1.0 - c;
+		
+		return mat3(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,
+					oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,
+					oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c);
+	} else {
+		return mat3(identity());
+	}
+  
+}
+
+// Rotation matrix around the X axis.
+mat3 rotateX(float theta) {
+    float c = cos(theta);
+    float s = sin(theta);
+    return mat3(
+        vec3(1, 0, 0),
+        vec3(0, c, -s),
+        vec3(0, s, c)
+    );
+}
+
+// Rotation matrix around the Y axis.
+mat3 rotateY(float theta) {
+    float c = cos(theta);
+    float s = sin(theta);
+    return mat3(
+        vec3(c, 0, s),
+        vec3(0, 1, 0),
+        vec3(-s, 0, c)
+    );
+}
+
+// Rotation matrix around the Z axis.
+mat3 rotateZ(float theta) {
+    float c = cos(theta);
+    float s = sin(theta);
+    return mat3(
+        vec3(c, -s, 0),
+        vec3(s, c, 0),
+        vec3(0, 0, 1)
+    );
+}
+
+void main() {	
+	int index = int(iOrigVertices_indices.w);
+	vec3 scale =   texture(paramsTex, vec2(index, 0)).zxy; 
+	vec3 rotaxyz = radians(texture(paramsTex, vec2(index, 1)).zxy);
+    vec3 newPos =  texture(paramsTex, vec2(index, 2)).zxy;
+	vec4 color =   texture(paramsTex, vec2(index, 3)).rgba;
+	vec4 rotateValues = texture(paramsTex, vec2(index, 4)); 
+
+	mat3 rotateMatrix = rotationMatrix(rotateValues.xyz *-1, rotateValues.w);
+	rotateMatrix = rotateMatrix * rotateX(rotaxyz.x) * rotateY(rotaxyz.y) * rotateZ(rotaxyz.z);
+	oVertices =  iOrigVertices_indices.xyz * rotateMatrix * scale + newPos;
+	oNormals = normalize(iOrigNormals * rotateMatrix);
+	oColor = color;
+}
+]]>
+		</program>
+		<program name="fp" type="fragment" >
+		<![CDATA[
+#version 330 core
+void main() 
+{
+}
+		]]>
+		</program>
+	</language>
+</jittershader>

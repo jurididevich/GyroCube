@@ -1,0 +1,40 @@
+<jittershader name="TFLocomotion">
+	<description>Basic Transform Feedback Locomotion</description>
+	<param name="position" type="vec3" state="POSITION" />
+	<param name="velocity" type="vec3" state="NORMAL" />
+	<param name="speed" type="float" default="0.1" />
+	<param name="drag" type="float" default="0.99" />
+	<language name="glsl" version="1.5">
+		<bind param="position" program="vp" />
+		<bind param="velocity" program="vp" />
+		<bind param="speed" program="vp" />
+		<bind param="drag" program="vp" />
+		<program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+uniform float speed;
+uniform float drag;
+in vec3 position;
+in vec3 velocity;
+
+out vec3 Position1;
+out vec3 Velocity1;
+
+void main() {	
+	// locomotion handled per vertex first
+	Position1 = position+velocity*speed;
+	// use the drag param to create friction
+	Velocity1 = velocity*drag;
+}
+]]>
+		</program>
+		<program name="fp" type="fragment"  >
+		<![CDATA[
+#version 330 core
+void main() 
+{
+}
+		]]>
+		</program>
+	</language>
+</jittershader>

@@ -1,0 +1,108 @@
+<jittershader name="default">
+	<param name="colTex" type="int" default="0" />
+	<param name="norTex" type="int" default="1" />
+	<param name="modelViewProjectionMatrix" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="textureMatrix0" type="mat4" state="TEXTURE0_MATRIX" />
+	<param name="position" type="vec3" state="POSITION" />
+	<param name="texcoord" type="vec2" state="TEXCOORD" />
+	<param name="exponent" type="vec3" default="-5.0 -10.0 -20.0" />
+	<param name="camPos" type="vec3" state="CAMERA_POSITION" />
+	<param name="farDistance" type="float" state="FAR_CLIP" />
+	<param name="farCorner" type="vec3" state="FAR_CORNER" />	
+	<param name="invV" type="mat4" state="VIEW_MATRIX" transform="INVERSE" />
+	<param name="density" type="float" default="1." />
+	<param name="altitude" type="float" default="0." />
+	<param name="enable_altitude" type="int" default="0" />
+	<language name="glsl" version="1.5">
+		<bind param="colTex" program="fp" />
+		<bind param="norTex" program="fp" />
+		<bind param="modelViewProjectionMatrix" program="vp" />
+		<bind param="textureMatrix0" program="vp" />
+		<bind param="position" program="vp" />
+		<bind param="texcoord" program="vp" />
+		<bind param="exponent" program="fp" />
+		<bind param="camPos" program="fp" />
+		<bind param="farDistance" program="fp" />
+		<bind param="farCorner" program="vp" />	
+		<bind param="invV" program="fp" />
+		<bind param="density" program="fp" />
+		<bind param="altitude" program="fp" />
+		<bind param="enable_altitude" program="fp" />
+		<program name="vp" type="vertex"  >
+		<![CDATA[
+			#version 330 core
+			
+			in vec3 position;
+			in vec2 texcoord;
+			out jit_PerVertex {
+				vec2 texcoord;
+				smooth vec3 ray;
+			} jit_out;
+			uniform mat4 modelViewProjectionMatrix;
+			uniform mat4 textureMatrix0;
+			uniform vec3 farCorner;
+			
+			void main(void) {
+				gl_Position = modelViewProjectionMatrix*vec4(position, 1.);
+				jit_out.texcoord = vec2(textureMatrix0*vec4(texcoord, 0., 1.));
+				jit_out.ray = farCorner * vec3(gl_Position.xy, 1);
+			}
+		]]>
+		</program>
+		
+		<program name="fp" type="fragment"  >
+		<![CDATA[
+			#version 330 core
+			
+			in jit_PerVertex {
+				vec2 texcoord;
+				smooth vec3 ray;
+			} jit_in;
+			layout (location = 0) out vec4 outColor;
+			
+			uniform sampler2DRect colTex, norTex;
+			uniform vec3 exponent;
+			uniform vec3 camPos;
+			uniform float farDistance;
+			uniform mat4 invV;
+			uniform float density, altitude;
+			uniform int enable_altitude;
+
+			// plane degined by p (p.xyz must be normalized)
+			float plaIntersect( in vec3 ro, in vec3 rd, in vec4 p )
+			{
+			    //return -(dot(ro,p.xyz)+p.w)/dot(rd,p.xyz)/farDistance;
+			    float mult = ro.y*p.y;
+			    return -(ro.y*p.y + p.w)/(rd.y*p.y)/farDistance;//
+			}
+			float getDistanceToTraverse(float depth, vec3 wRay){
+				float planeDepth = plaIntersect(camPos, wRay, vec4(0., 1., 0., -altitude));	
+				return max(0., (depth - planeDepth));		
+			}
+
+			float getDistanceToTraverseAltitude(float depth){
+				vec3 normRd = normalize(jit_in.ray);
+				vec3 viewPos = normRd * farDistance * depth;
+				vec3 worldPos = (invV * vec4(viewPos, 1.)).xyz;
+				vec3 wRay = (invV * vec4(normRd, 0.)).xyz;//normalize(worldPos - camPos);
+
+				return camPos.y > altitude ? ( wRay.y >= 0. ? 0. : getDistanceToTraverse(depth, wRay) ) :
+														 ( wRay.y <= 0. ? depth : min(depth, plaIntersect(camPos, wRay, vec4(0., 1., 0., -altitude))) );
+			}
+
+			void main(void) {
+				vec3 col = texture(colTex, jit_in.texcoord).rgb;
+				float depth = texture(norTex, jit_in.texcoord).w;
+				depth = depth == 0. ? 1.0 : depth;
+
+				float toTraverse = enable_altitude == 1 ? getDistanceToTraverseAltitude(depth) : depth;
+				toTraverse *= density;
+
+				vec3 lambda = vec3(exp(-exponent.r*toTraverse), exp(-exponent.g*toTraverse), exp(-exponent.b*toTraverse));
+				outColor.rgb = col*lambda + vec3(1.0) - lambda;
+				outColor.a = 1.;
+			}
+		]]>
+		</program>
+	</language>
+</jittershader>

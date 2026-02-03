@@ -1,0 +1,181 @@
+<jittershader name="TFLocomotion">
+    <description>Basic Transform Feedback Locomotion</description>
+    <param name="position" type="vec3" state="POSITION" />
+    <param name="instance_position" type="vec4" state="VERTEX_ATTR0" />
+    <param name="instance_velocity" type="vec3" state="VERTEX_ATTR1" />
+    <param name="color" type="vec4" state="COLOR" />
+	<param name="normal" type="vec3" state="NORMAL" />
+    <param name="mvp" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+    <param name="normalmatrix" type="mat3" state="NORMAL_MATRIX" />
+    <language name="glsl" version="1.5">
+        <bind param="position" program="vp" />
+        <bind param="instance_position" program="vp" />
+        <bind param="instance_velocity" program="vp" />
+		<bind param="normal" program="vp" />
+        <bind param="color" program="vp" />
+        <bind param="mvp" program="vp" />
+        <bind param="normalmatrix" program="vp" />
+        <program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+
+// Model-view-projection matrix
+uniform mat4 mvp;
+uniform mat3 normalmatrix;
+
+// Instanced attributes (position and velocity of the flock member)
+in vec4 instance_position;
+in vec3 instance_velocity;
+// Geometry input
+in vec3 position;
+in vec4 color;
+in vec3 normal;
+
+// Output color from the vertex shader
+flat out vec4 vs_color;
+flat out vec3 vs_normal;
+
+float parabola( float x, float k )
+{
+    return pow( 4.0*x*(1.0-x), k );
+}
+
+// This is essentially a 'lookat' matrix to make the airplane fly fowards
+// and hopefully, stay upright
+mat4 calculate_rotation_matrix(vec3 direction)
+{
+    vec3 forwards = normalize(direction);
+    vec3 outwards;
+    outwards = cross(forwards, vec3(1.0, 0.0, 0.0)) * forwards.x * forwards.x +
+               cross(forwards, vec3(0.0, 1.0, 0.0)) * forwards.y * forwards.y +
+               cross(forwards, vec3(0.0, 0.0, 1.0)) * forwards.z * forwards.z;
+//     outwards /= (abs(forwards.x) + abs(forwards.y) + abs(forwards.z));
+    vec3 up = cross(forwards, outwards);
+    outwards = cross(forwards, up);
+
+    vec4 row3 = vec4(forwards, 0.0);
+    vec4 row2 = vec4(normalize(outwards), 0.0);
+    vec4 row1 = vec4(normalize(up), 0.0);
+
+    return mat4(row1, row2, row3, vec4(0.0));
+}
+
+void main(void)
+{
+    // Get the forwards matrix
+    mat4 rotation = calculate_rotation_matrix(instance_velocity);
+    float scale = parabola(1 - instance_position.a, 1);
+
+    // Rotate the airplane geometry into the correct orientation and then
+    // offset by position within the flock
+    vec4 pos = rotation * vec4(position*scale, 0.0) + vec4(instance_position.rgb, 1.0);
+    
+
+    vs_color = color;
+	vs_normal = normalmatrix * normal;
+	
+    // Output position
+    gl_Position = mvp * pos;
+}
+        ]]>
+        </program>
+        <program name="gp" type="geometry">
+<![CDATA[
+#version 330 core
+// This is a really simple geometry shader that simply calculates flat shading.
+layout (triangles) in;
+layout (triangle_strip, max_vertices=3) out;
+
+// Color from the VS
+flat in vec4 vs_color[3];
+flat in vec3 vs_normal[3];
+
+// Output to the FS
+flat out vec4 gs_color;
+flat out vec3 gs_normal;
+
+void main(void)
+{
+
+    // Output three vertices
+    for (int n = 0; n < 3; n++) {
+        gs_color = vs_color[n];
+        gs_normal = vs_normal[n];
+        gl_Position = gl_in[n].gl_Position;
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+]]>
+        </program>
+        <program name="fp" type="fragment">
+<![CDATA[
+#version 330 core
+
+flat in vec4 gs_color;
+flat in vec3 gs_normal;
+
+layout (location = 0) out vec4 color;
+
+vec3 erot(vec3 p, vec3 ax, float ro) {
+    return mix(dot(ax,p)*ax, p, cos(ro)) + sin(ro)*cross(ax,p);
+}
+
+// https://www.shadertoy.com/view/ttGfz1
+float lighting(vec3 normal, int type) {
+    if (type == 0) {
+        //phong diffuse lighting
+        vec3 lightDir = normalize(vec3(1));
+        return max(dot(lightDir, normal), 0.);
+    }
+    if (type == 1) {
+        //hemispherical lighting
+        vec3 lightDir = normalize(vec3(1));
+        return dot(lightDir, normal) * .5 + .5;
+    }
+    if (type == 2) {
+        //"leaky" phong diffuse lighting
+        vec3 lightDir = normalize(vec3(1));
+        float shade = dot(lightDir, normal);
+        return mix(max(shade, 0.), shade * .5 + .5, .05);
+    }
+    if (type == 3) {
+        //axis lighting
+        return dot(max(normal, 0.), vec3(.4));
+    }
+    if (type == 4) {
+        //downward pointing axis lighting
+        normal = erot(normal, normalize(vec3(-1,1,0)), .96);
+        return dot(max(normal, 0.), vec3(.4));
+    }
+    if (type == 5) {
+        //image based lighting
+        //return pow(textureLod(iChannel0, normal.xzy, 7.).x, 2.);
+    }
+    if (type == 6) {
+        //fake image based lighting ("studio lighting")
+        return pow(length(sin(normal*2.)*.5+.5)/sqrt(3.), 2.);
+    }
+    if (type == 7) {
+        //fake image based lighting ("outdoor lighting")
+        return length(sin(normal*2.)*.5+.5)/sqrt(3.)*smoothstep(-1.,1.,normal.z);
+    }
+    return 0.;
+}
+
+
+void main(void)
+{
+    // Simple lighting calculation
+    vec3 L = normalize(vec3(1));
+    vec3 N = normalize(gs_normal);
+
+    float br = lighting(N, 7);
+    
+    color = gs_color * br;
+    color = sqrt(color);
+}
+]]>
+        </program>
+    </language>
+</jittershader>        

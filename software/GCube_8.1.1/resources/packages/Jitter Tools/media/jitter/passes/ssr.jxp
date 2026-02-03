@@ -1,0 +1,19 @@
+<jitterpass>
+	<pass name="ssr">
+
+		<subpass name="viewPos" file="tssao.getviewpos.jxs" inputs="1" >
+			<input source="NORMALS" />
+		</subpass>
+
+		<bind name="ref_length" param="ref_length" default="50." />
+		<bind name="ref_roughness" param="ref_roughness" default="0.1" />
+		<bind name="ref_amnt" param="ref_amnt" default="0.1" />
+		<bind name="ref_iterations" param="ref_iterations" type="int" default="1" />
+		<subpass name="ssr-pass" file="ssr.jxs" inputs="3" outputs="1" >
+			<input source="NORMALS" />
+			<input subpass="viewPos" />
+			<input source="COLOR" />
+		</subpass>
+
+	</pass>
+</jitterpass>	

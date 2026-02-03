@@ -1,0 +1,14 @@
+<jitterpass>
+	<pass name="gamma">
+		<bind name="gamma_correction" param="gamma_correction" default="1" />
+		<bind name="tonemapping" param="tonemapping" default="1" />
+		<bind name="dithering" param="dithering" default="0" />
+		<bind name="exposure" param="exposure" default="1." />
+		<bind name="max_white" param="max_white" default="3." />
+		<bind name="color_levels" param="color_levels" default="256" />
+		<bind name="show_clipped" param="show_clipped" default="0" />
+		<subpass file="hdr.gamma.jxs" >
+			<input source="COLOR" />
+		</subpass>
+	</pass>
+</jitterpass>	

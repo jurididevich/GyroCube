@@ -1,0 +1,62 @@
+<jittershader name="TFsculpt">
+	<description>Transform Feedback field transformations</description>
+	<param name="position" type="vec3" state="POSITION" />
+	<param name="base" type="vec3" state="NORMAL" />
+	<param name="location" type="vec3" default="0. 0. 0." />
+	<param name="falloff" type="float" default="0.5" />
+	<param name="radius" type="float" default="0.75" />
+	<param name="translate" type="vec3" default="0. 0. 0." />
+	<param name="force" type="float" default="0." />
+	<param name="base_mix" type="float" default="0.01" />
+	<language name="glsl" version="1.5">
+		<bind param="position" program="vp" />
+		<bind param="base" program="vp" />
+		<bind param="location" program="vp" />
+		<bind param="falloff" program="vp" />
+		<bind param="radius" program="vp" />
+		<bind param="translate" program="vp" />
+		<bind param="force" program="vp" />
+		<bind param="base_mix" program="vp" />
+		<program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+uniform float falloff;
+uniform float radius;
+uniform float force;
+uniform float base_mix;
+uniform vec3 location;
+uniform vec3 translate;
+
+in vec3 position;
+in vec3 base;
+
+out vec3 Position1;
+out vec3 Base1;
+
+void main() {	
+	//first apply attraction to base mesh and assign to local variable
+	vec3 pos_loc = mix(position,base,base_mix);
+	//get a normalized vector showing direction away from location
+	vec3 force_dir = normalize(pos_loc-location);
+	//check if vertex is inside of field
+	float field_mask = smoothstep(radius,radius-falloff*radius,length(pos_loc-location));
+	//apply force if it's inside the field
+	pos_loc += force_dir*force*field_mask;
+	//apply translation if it's inside the field
+	pos_loc += translate*field_mask;
+	//assign to outputs
+	Position1 = pos_loc;
+	Base1 = base;
+}
+]]>
+		</program>
+		<program name="fp" type="fragment"  >
+		<![CDATA[
+#version 330 core
+void main() 
+{
+}
+		]]>
+		</program>
+	</language>
+</jittershader>

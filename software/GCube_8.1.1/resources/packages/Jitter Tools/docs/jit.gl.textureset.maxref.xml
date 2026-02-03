@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object name="jit.gl.textureset">
+
+    <digest>
+        A set of textures for storage and resequencing
+    </digest>
+
+    <description>
+        The jit.gl.textureset object keeps a set of internal textures which may be written to or read from. This may be useful for data storage and/or texture resequencing. jit.gl.textureset mimics the functionality of <o>jit.matrixset</o> but outputs textures instead of matrices.
+    </description>
+
+    <!--METADATA-->
+    <metadatalist>
+        <metadata name="tag">Jitter-Tools</metadata>
+        <metadata name="tag">Jitter</metadata>
+    </metadatalist>
+
+    <!--ARGUMENTS-->
+    <objarglist>
+        <objarg name="texturecount" optional="1" type="int">
+            <digest>The number of textures in the texture set (default = 1)
+            </digest>
+        </objarg>        
+        <objarg name="drawto" optional="1" type="message">
+            <digest>The named drawing context in which to draw (default = none). A named drawing context 
+                is a named instance of a <o>jit.world</o>, <o>jit.pworld</o> or <o>jit.gl.node</o> object. If no argument is 
+                provided the object will find a context 
+                <link module="core" name="jitter_gl_contexts" type="vignette">implicitly.</link>
+            </digest>
+        </objarg>
+    </objarglist>
+
+    <!--MESSAGES-->
+    <methodlist>
+        <method name="clear">
+            <digest>
+                Clear all stored textures
+            </digest>
+        </method>
+        <method name="outputtexture">
+            <arglist>
+                <arg name="index" optional="0" type="int" />
+            </arglist>
+            <digest>
+                Output the texture currently stored at index.
+            </digest>
+        </method>            
+    </methodlist>
+
+    <attributelist>
+        <attribute name="adapt" type="int">
+            <digest>
+                Enable adapt to input (default = 1)
+            </digest>
+            <description>
+                Enable <o>jit.gl.texture</o> adapt to input attribute (default = 1). When enabled the texture output dimensions will match the input dimensions.
+            </description>
+        </attribute>
+        <attribute name="dims" type="int">
+            <digest>
+                Dimensions of output textures when adapt is disabled (default = 256 256)
+            </digest>
+            <description>
+                Set the dimensions of output textures (default = 256 256) when the <at>adapt</at> attribute is disabled.
+            </description>
+        </attribute>    
+        <attribute name="index" type="int">
+            <digest>
+                Set which of texture in the set an incoming texture will be written to (default = 0)
+            </digest>
+        </attribute>
+    </attributelist>
+
+<!--SEEALSO-->
+    <seealsolist>
+        <seealso name="jit.matrixset"/>
+        <seealso name="jit.gl.texture"/>
+    </seealsolist>
+
+</c74object>

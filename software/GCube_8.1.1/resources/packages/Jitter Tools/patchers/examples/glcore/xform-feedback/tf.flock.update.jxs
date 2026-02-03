@@ -1,0 +1,119 @@
+<jittershader name="TFFlock">
+	<description>Transform Feedback Flocking Simulation</description>
+	<param name="flock_position" type="vec3" state="VERTEX_ATTR0" />
+	<param name="flock_velocity" type="vec3" state="VERTEX_ATTR1" />
+	<param name="tex_positions" type="int" default="0" />
+	<param name="tex_velocities" type="int" default="1" />
+	<param name="flock_size" type="int" default="100" />
+	<param name="goal" type="vec3" default="0 0 0" />
+	<param name="rule_weights" type="vec3" default="0.17 0.01 0.025" />
+	<param name="damping_coefficient" type="float" default="0.99999" />
+	<param name="closest_allowed_dist" type="float" default="50." />
+	<param name="timestep" type="float" default="0.05" />
+	<language name="glsl" version="1.5">
+		<bind param="flock_position" program="vp" />
+		<bind param="flock_velocity" program="vp" />
+		<bind param="tex_positions" program="vp" />
+		<bind param="tex_velocities" program="vp" />
+		<bind param="flock_size" program="vp" />
+		<bind param="goal" program="vp" />
+		<bind param="rule_weights" program="vp" />
+		<bind param="damping_coefficient" program="vp" />
+		<bind param="closest_allowed_dist" program="vp" />
+		<bind param="timestep" program="vp" />
+		<program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+// flocking_update.vs
+// OpenGL SuperBible
+// Example of using transform feedback to implement flocking
+// Program by Graham Sellers.
+
+// Flocking update vertex shader
+// Position and velocity inputs
+in vec3 flock_position;
+in vec3 flock_velocity;
+
+// Outputs (via transform feedback)
+out vec3 position_out;
+out vec3 velocity_out;
+
+// TBOs containing the position and velocity of other flock members
+uniform samplerBuffer tex_positions;
+uniform samplerBuffer tex_velocities;
+
+// Parameters...
+// This has to match the app's view of the world - no default is given here.
+uniform int flock_size;
+// These all have defaults. In the example application, these aren't changed.
+// Just edit these and rerun the application. It's certainly possible to change
+// these parameters at run time by hooking the uniforms up in the application.
+uniform vec3 rule_weights;
+uniform float damping_coefficient = 0.99999;
+uniform float closest_allowed_dist = 50.0;
+
+// Time varying uniforms
+uniform vec3 goal;
+uniform float timestep;
+
+// The two per-member rules
+vec3 rule1(vec3 my_position, vec3 my_velocity, vec3 their_position, vec3 their_velocity)
+{
+    vec3 d = my_position - their_position;
+    if (dot(d, d) < closest_allowed_dist)
+        return d;
+    return vec3(0.0);
+}
+
+vec3 rule2(vec3 my_position, vec3 my_velocity, vec3 their_position, vec3 their_velocity)
+{
+     vec3 d = their_position - my_position;
+     vec3 dv = their_velocity - my_velocity;
+     return dv / (dot(d, d) + 10.0);
+}
+
+void main(void)
+{
+    vec3 accelleration = vec3(0.0);
+    vec3 center = vec3(0.0);
+    vec3 new_velocity;
+    int i;
+
+    // Apply rules 1 and 2 for my member in the flock (based on all other
+    // members)
+    for (i = 0; i < flock_size; i++) {
+        if (i != gl_VertexID) {
+            vec3 their_position = texelFetch(tex_positions, i).xyz;
+            vec3 their_velocity = texelFetch(tex_velocities, i).xyz;
+            accelleration += rule1(flock_position, flock_velocity, their_position, their_velocity) * rule_weights.x;
+            accelleration += rule2(flock_position, flock_velocity, their_position, their_velocity) * rule_weights.y;
+            center += their_position;
+        }
+    }
+    // Also accellerate towards the goal (rule 3)
+    accelleration += normalize(goal - flock_position) * rule_weights.z;
+    // Update position based on prior velocity and timestep
+    position_out = flock_position + flock_velocity * timestep;
+    // Update velocity based on calculated accelleration
+    accelleration = normalize(accelleration) * min(length(accelleration), 10.0);
+    new_velocity = flock_velocity * damping_coefficient + accelleration * timestep;
+    // Hard clamp speed (mag(velocity) to 10 to prevent insanity
+    if (length(new_velocity) > 10.0)
+        new_velocity = normalize(new_velocity) * 10.0;
+    velocity_out = new_velocity;
+    // Write position (not strictly necessary as we're capturing user defined
+    // outputs using transform feedback)
+    gl_Position = vec4(flock_position * 0.1, 1.0);
+}
+]]>
+		</program>
+		<program name="fp" type="fragment"  >
+		<![CDATA[
+#version 330 core
+void main() 
+{
+}
+		]]>
+		</program>
+	</language>
+</jittershader>

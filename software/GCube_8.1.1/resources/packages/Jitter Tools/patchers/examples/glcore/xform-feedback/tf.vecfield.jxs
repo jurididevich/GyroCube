@@ -1,0 +1,65 @@
+<jittershader name="tf.vecfield.jxs">
+	<description>Basic Vectorfield</description>
+	<param name="position" type="vec3" state="POSITION" />
+	<param name="init_pos" type="vec3" state="NORMAL" />
+	<param name="bfg_tex0" type="int" default="0" />
+	<param name="speed" type="vec3" default="0.01 0.02 0.03" />
+	<param name="amt" type="float" default="0." />
+	<param name="freeze" type="float" default="0." />
+	<language name="glsl" version="1.5">
+		<bind param="position" program="vp" />
+		<bind param="init_pos" program="vp" />
+		<bind param="bfg_tex0" program="vp" />
+		<bind param="speed" program="vp" />
+		<bind param="amt" program="vp" />
+		<bind param="freeze" program="vp" />
+		<program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+
+uniform vec3 speed;
+uniform float amt;
+uniform float freeze;
+
+uniform sampler2D bfg_tex0;
+
+// <param name=position state=POSITION />
+in vec3 position;
+// <param name=init_pos state=NORMAL />
+in vec3 init_pos;
+
+// [jit.gl.buffer @outname posOut @type position]
+out vec3 posOut;
+// [jit.gl.buffer @outname initOut @type normal]
+out vec3 initOut;
+
+void main() {
+	// normalize position from -1 1 to 0-1
+	vec2 normPos = init_pos.xy * 0.5 + 0.5;
+
+	// lookup value from texture based on particle coordinate
+	vec3 vel = (texture(bfg_tex0, normPos).rgb * 2 - 1) * speed;
+
+	// apply velocity to position
+	vec3 pos = position + vel ;
+
+	// mix between initial-pos and transformed-pos, and apply animation freeze
+	posOut = mix(mix(init_pos, pos, amt), position, freeze);
+	
+	// pass thru initial
+	initOut = init_pos;
+	
+}
+]]>
+		</program>
+
+		<program name="fp" type="fragment"  >
+		<![CDATA[
+#version 330 core
+void main() 
+{
+}
+		]]>
+		</program>
+	</language>
+</jittershader>

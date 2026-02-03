@@ -1,0 +1,12 @@
+<jitterpass>
+	<pass name="atmospheric">
+		<bind name="color" param="exponent" default="2.0 4.0 8.0" />
+		<bind name="density" param="density" default="1." />
+		<bind name="altitude" param="altitude" default="0." />
+		<bind name="enable_altitude" param="enable_altitude" default="0" />
+		<subpass file="atmospheric.jxs">
+			<input source="COLOR" />
+			<input source="NORMALS" />
+		</subpass>
+	</pass>
+</jitterpass>	

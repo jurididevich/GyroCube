@@ -1,0 +1,73 @@
+<jittershader name="default">
+	<description>Apply ao, gi, and ssr </description>
+	<param name="colTex" type="int" default="0" />
+	<param name="aoTex" type="int" default="1" />
+	<param name="giTex" type="int" default="2" />
+	<param name="refTex" type="int" default="3" />
+	<param name="MVP" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="textureMatrix0" type="mat4" state="TEXTURE0_MATRIX" />
+	<param name="pos" type="vec3" state="POSITION" />
+	<param name="uv" type="vec2" state="TEXCOORD" />
+	<param name="ref_amnt" type="float" default="0.1" />
+	<param name="ao_solo" type="int" default="0" />
+	<language name="glsl" version="1.5">
+		<bind param="colTex" program="fp" />
+		<bind param="aoTex" program="fp" />
+		<bind param="giTex" program="fp" />
+		<bind param="refTex" program="fp" />
+		<bind param="MVP" program="vp" />
+		<bind param="textureMatrix0" program="vp" />
+		<bind param="pos" program="vp" />
+		<bind param="uv" program="vp" />
+		<bind param="ref_amnt" program="fp" />
+		<bind param="ao_solo" program="fp" />
+		<program name="vp" type="vertex"  >
+		<![CDATA[
+			#version 330 core
+			
+			in vec3 pos;
+			in vec2 uv;
+			out jit_PerVertex {
+				vec2 uv;
+			} jit_out;
+			uniform mat4 MVP;
+			uniform mat4 textureMatrix0;
+			
+			void main(void) {
+				gl_Position = MVP*vec4(pos, 1.);
+				jit_out.uv = vec2(textureMatrix0*vec4(uv, 0., 1.));
+			}
+		]]>
+		</program>
+		
+		<program name="fp" type="fragment"  >
+		<![CDATA[
+			#version 330 core
+			
+			in jit_PerVertex {
+				vec2 uv;
+			} jit_in;
+			layout (location = 0) out vec4 col;
+			
+			uniform sampler2DRect colTex, aoTex, giTex, refTex;
+			uniform float ref_amnt;
+			uniform int ao_solo;
+
+			void main(void) {
+				vec4 lookup = texture(colTex, jit_in.uv);
+				vec4 gi = texture(giTex, jit_in.uv);
+				float ao = 1. - (texture(aoTex, jit_in.uv).r);
+				vec4 ref = texture(refTex, jit_in.uv);
+
+				vec3 	indirect = mix(gi.rgb*ao , ref.rgb, mix(0., ref_amnt, ref.a));
+						indirect *= lookup.rgb*0.3 + vec3(0.7);
+
+				col.rgb = lookup.a > 0. ? ao*lookup.rgb + indirect : lookup.rgb;
+				col.rgb = ao_solo == 1 ? vec3(ao) : col.rgb;
+
+				col.a = 1.;
+			}
+		]]>
+		</program>
+	</language>
+</jittershader>

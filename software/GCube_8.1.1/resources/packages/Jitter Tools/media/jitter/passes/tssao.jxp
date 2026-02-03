@@ -1,0 +1,82 @@
+<jitterpass>
+	<pass name="tssao-gi-ssr">
+
+		<subpass name="viewPos" file="tssao.getviewpos.jxs" inputs="1" >
+			<input source="NORMALS" />
+		</subpass>
+
+		<subpass name="currAndPrevVelocity" file="tssao.packvelocity.jxs" inputs="2" >
+			<input source="VELOCITY" />
+			<input subpass="currAndPrevVelocity" history="1" />
+		</subpass>
+
+		<bind name="ao_intensity" param="ao_intensity" default="3.5" />
+		<bind name="ao_radius" param="ao_radius" default="1.4" />
+		<bind name="ao_samples" param="ao_samples" default="3" />
+		<bind name="ao_close_far" param="ao_close_far" default="0.7" />
+		<bind name="ref_length" param="ref_length" default="50." />
+		<bind name="ref_roughness" param="ref_roughness" default="0.1" />
+		<bind name="ref_iterations" param="ref_iterations" type="int" default="1" />
+		<bind name="gi_accumulation" param="gi_accumulation" type="foat" default="1.7" />
+		<subpass name="tssao" file="tssao.gi.ssr.jxs" inputs="7" outputs="3" >
+			<input source="NORMALS" />
+			<input subpass="viewPos" />
+			<input subpass="currAndPrevVelocity" />
+			<input subpass="tssao" output="0" history="1" />
+			<input subpass="viewPos" history="1" />
+			<input subpass="colorClamping" history="1" />
+			<input source="COLOR" />
+		</subpass>
+
+		<subpass name="colorClamping" file="tssao.clampcolor.jxs" inputs="1" >
+			<input subpass="tssao" output="1" />
+		</subpass>
+
+		<bind name="ref_amnt" param="ref_amnt" default="0.1" />
+		<bind name="ao_solo" param="ao_solo" default="0" />
+		<subpass name="applyAO" file="tssao.ao.gi.ref.jxs" inputs="4" outputs="1" >
+			<input source="COLOR" />
+			<input subpass="tssao" output="0" />
+			<input subpass="colorClamping" />
+			<input subpass="tssao" output="2" />
+		</subpass>
+	</pass>
+
+	<pass name="tssao-gi">
+
+		<subpass name="viewPos" file="tssao.getviewpos.jxs" inputs="1" >
+			<input source="NORMALS" />
+		</subpass>
+
+		<subpass name="currAndPrevVelocity" file="tssao.packvelocity.jxs" inputs="2" >
+			<input source="VELOCITY" />
+			<input subpass="currAndPrevVelocity" history="1" />
+		</subpass>
+
+		<bind name="ao_intensity" param="ao_intensity" default="3.5" />
+		<bind name="ao_radius" param="ao_radius" default="1.4" />
+		<bind name="ao_samples" param="ao_samples" default="3" />
+		<bind name="ao_close_far" param="ao_close_far" default="0.7" />
+		<bind name="gi_accumulation" param="gi_accumulation" type="foat" default="1.7" />
+		<subpass name="tssao" file="tssao.gi.jxs" inputs="7" outputs="2" >
+			<input source="NORMALS" />
+			<input subpass="viewPos" />
+			<input subpass="currAndPrevVelocity" />
+			<input subpass="tssao" output="0" history="1" />
+			<input subpass="viewPos" history="1" />
+			<input subpass="colorClamping" history="1" />
+			<input source="COLOR" />
+		</subpass>
+
+		<subpass name="colorClamping" file="tssao.clampcolor.jxs" inputs="1" >
+			<input subpass="tssao" output="1" />
+		</subpass>
+
+		<bind name="ao_solo" param="ao_solo" default="0" />
+		<subpass name="applyAO" file="tssao.ao.gi.jxs" inputs="3" outputs="1" >
+			<input source="COLOR" />
+			<input subpass="tssao" output="0" />
+			<input subpass="colorClamping" />
+		</subpass>
+	</pass>	
+</jitterpass>	

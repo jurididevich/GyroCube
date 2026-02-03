@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object name="jit.gl.textmult">
+
+    <digest>
+        Multiple 3D Texts 
+    </digest>
+
+    <description>
+        The jit.gl.textmult object is very similar to jit.gl.multiple, but for text. 
+        It allows to treat a list of words as several jit.gl.text objects, which can be controlled through matrices.
+    </description>
+
+    <!--METADATA-->
+    <metadatalist>
+        <metadata name="tag">Jitter-Tools</metadata>
+        <metadata name="tag">Jitter</metadata>
+    </metadatalist>
+
+    <!--INLETS-->
+    <inletlist>
+        <inlet id="0" type="message">
+            <digest>Inlet 0</digest>
+            <description>Send messages to jit.gl.textmult</description>
+        </inlet>
+    </inletlist>
+
+    <!--OUTLETS-->
+    <!-- <outletlist>
+        <outlet id="0" type="message">
+            <digest>Outlet 0</digest>
+            <description>Send messages from jit.gl.meshwarp</description>
+        </outlet>
+    </outletlist> -->
+
+    <!--ARGUMENTS-->
+    <objarglist>
+        <objarg name="drawto" optional="" type="message">
+            <digest>The named drawing context in which to draw (default = none). A named drawing context 
+                is a named instance of a <o>jit.world</o>, <o>jit.pworld</o> or <o>jit.gl.node</o> object. If no argument is 
+                provided the object will find a context
+                <link module="core" name="jitter_gl_contexts" type="vignette">implicitly.</link>
+            </digest>
+        </objarg>
+        <objarg name="inputs_number" optional="" type="integer">
+        <digest>The number of inputs the object will have. The number of inputs determines the number of glparams that can be used.
+            <link module="core" name="jitter_gl_contexts" type="vignette">implicitly.</link>
+        </digest>
+        </objarg>
+    </objarglist>
+
+    <!--MESSAGES-->
+    <methodlist>
+        <method name="clear">
+            <!--<arglist>
+                <arg name="parameter-settings" optional="0" type="float" />
+            </arglist>-->
+            <digest>
+            Deletes all the text objects. 
+            </digest>
+            <description>
+                Delete all the text objects.
+            </description>
+        </method>
+         <method name="jit_matrix">
+            <digest>
+           jit_matrix
+            </digest>
+            <description>
+                jit_matrix
+            </description>
+        </method>
+</methodlist>
+<jittermethodlist>
+        <jittermethod name="draw" />
+</jittermethodlist>
+
+<!--ATTRIBUTES-->
+<attributelist>
+    <attribute name="align">
+            <arglist />
+            <digest>
+                Text alignment mode
+            </digest>
+            <description>
+                 Text alignment mode (default = 0 (left))
+            </description>
+    </attribute>
+    <attribute name="color">
+            <arglist />
+            <digest>
+                The color of the mesh (default = 1. 1. 1. 1.)
+            </digest>
+            <description>
+                The color of the mesh (default = 1. 1. 1. 1.)
+            </description>
+    </attribute>
+    <attribute name="enable">
+            <arglist />
+            <digest>
+                Enable flag (default = 1)
+            </digest>
+            <description>
+                Enable flag (default = 1) When the flag is set, drawing is enabled.
+            </description>
+    </attribute>
+    <attribute name="position">
+            <arglist />
+            <digest>
+                The 3D origin in the form x y z (default = 0. 0. 0.)
+            </digest>
+            <description>
+                The 3D origin in the form x y z (default = 0. 0. 0.)
+            </description>
+    </attribute>
+    <attribute name="scale">
+            <arglist />
+            <digest>
+                The 3D scaling factor in the form x y z (default = 1. 1. 1.)
+            </digest>
+            <description>
+                The 3D scaling factor in the form x y z (default = 1. 1. 1.)
+            </description>
+    </attribute>
+    <attribute name="texture">
+            <arglist />
+            <digest>
+                The name of the texture to be applied (default = none)
+            </digest>
+            <description>
+                The name of the texture to be applied (default = none). 
+            </description>
+    </attribute>
+        <attribute name="use_individual_texcoord">
+            <arglist />
+            <digest>
+                Set texture coordinates behavior (1 / 0)
+            </digest>
+            <description>
+                Set texture coordinates behavior. If set to 0 each word will map to a single pixel of the texture. 
+                If set to 1 wach word will be covered by the whole texture.
+            </description>
+    </attribute>
+</attributelist>
+<jitterattributelist>
+		<jitterattribute name="automatic" />
+        <jitterattribute name="rotatexyz" />
+        <jitterattribute name="scale" />
+        <jitterattribute name="poly_mode" />
+        <jitterattribute name="blend" />
+		<jitterattribute name="blend_enable" />
+		<jitterattribute name="blend_mode" />
+        <jitterattribute name="enable" />
+        <jitterattribute name="depth_enable" />
+        <jitterattribute name="drawto" />
+        <jitterattribute name="layer" />
+        <jitterattribute name="lighting_enable" />
+        <jitterattribute name="line_width" />
+        <jitterattribute name="mat_ambient" />
+		<jitterattribute name="mat_diffuse" />
+		<jitterattribute name="mat_emission" />
+		<jitterattribute name="mat_specular" />
+</jitterattributelist>
+
+
+<!--SEEALSO-->
+    <seealsolist>
+        <seealso name="jit.gl.multiple"/>
+        <seealso name="jit.gl.text"/>
+    </seealsolist>
+
+</c74object>

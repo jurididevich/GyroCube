@@ -1,0 +1,122 @@
+<jittershader>
+	<param name="position" type="vec3" state="POSITION" />
+	<param name="modelViewProjectionMatrix" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="modelViewMatrix" type="mat4" state="MODELVIEW_MATRIX" /> 
+	<param name="color" type="vec4" state="COLOR" />
+	<param name="normal" type="vec3" state="NORMAL" /> 
+	<param name="FrontMaterialParameters" state="BACK_MATERIAL" />
+	<param name="LightingParameters" state="LIGHT" />
+
+	<language name="glsl" version="1.5">
+		<bind param="position" program="vp" />
+		<bind param="modelViewProjectionMatrix" program="vp" />
+		<bind param="modelViewMatrix" program="vp" />
+		<bind param="color" program="vp" />
+		<bind param="normal" program="vp" />
+		<bind param="FrontMaterialParameters" program="vp" />
+		<bind param="LightingParameters" program="vp" />
+		
+		<!-- GLSL source file includes added to referenced program -->
+		<include source="diffuse.glsl" program="vp" />
+		<include source="specular.glsl" program="vp" />
+		
+		<program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+
+// Definitions
+struct MaterialParameters {
+	vec4 emission;
+	vec4 ambient;
+	vec4 diffuse;
+	vec4 specular;
+	float shininess;
+};
+
+struct LightModelParameters {
+	vec4 ambient;
+};
+
+struct LightSourceParameters {
+	vec4 ambient;
+	vec4 diffuse;
+	vec4 specular;
+	vec4 position;
+	vec3 spotDirection;
+	float spotExponent;
+	float spotCutoff;
+	float spotCosCutoff;
+	float constantAttenuation;
+	float linearAttenuation;
+	float quadraticAttenuation;
+};
+
+// Uniforms
+layout (std140) uniform FrontMaterialParameters {
+	MaterialParameters frontMaterial;
+};
+
+#define NUM_LIGHTS (1)
+layout (std140) uniform LightingParameters {
+	LightModelParameters lightModel;
+	LightSourceParameters light[NUM_LIGHTS];
+};
+
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 modelViewMatrix;
+in vec3 position;
+in vec4 color;
+in vec3 normal;
+
+out jit_PerVertex {
+	vec4 color;	
+} jit_out;
+
+vec4 calc_directional_light(vec3 Vn, vec3 Nn, vec3 pos, MaterialParameters mtl, LightSourceParameters light, vec4 c) {
+	vec3 L = normalize(light.position.xyz);
+	vec4 res_color = mtl.ambient*light.ambient;
+	res_color += c*light.diffuse*lambertian(Nn, L);
+	res_color += mtl.specular*light.specular*blinn(Vn, Nn, L, mtl.shininess);
+	return res_color;
+}
+
+void main() {	
+	gl_Position = modelViewProjectionMatrix * vec4(position, 1.);	
+	mat4 mvMatrix = modelViewMatrix;
+	
+	
+	// lighting calculations
+	vec3 eyePosition = (mvMatrix*vec4(position, 1.)).xyz;
+	vec3 Vn = normalize(-eyePosition);
+	
+	mat3 mv33 = mat3x3(mvMatrix);
+	mv33[0] = normalize(mv33[0]);
+	mv33[1] = normalize(mv33[1]);
+	mv33[2] = normalize(mv33[2]);
+	mat3 normalMatrix = transpose(inverse(mv33));
+	vec3 Nn = normalMatrix*normalize(normal);
+	
+	vec4 lit_color = frontMaterial.emission + frontMaterial.ambient*lightModel.ambient;
+	lit_color += calc_directional_light(Vn, Nn, eyePosition, frontMaterial, light[0], color);
+	jit_out.color = lit_color;
+
+}
+]]>
+		</program>
+		<program name="fp" type="fragment">
+<![CDATA[
+#version 330 core
+
+in jit_PerVertex {
+	vec4 color;
+} jit_in;
+
+out vec4 color;
+
+void main() {
+	color = jit_in.color;
+}	
+]]>
+		</program>
+	</language>
+</jittershader>

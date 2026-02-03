@@ -1,0 +1,139 @@
+<jittershader name="tf.particles.jxs">
+	<description>"transform feedback based particle simulation"</description>
+	<param name="Position" type="vec3" state="POSITION" />
+	<param name="Velocity" type="vec3" state="NORMAL" />
+	<param name="TypeAgeID" type="vec3" state="VERTEX_ATTR" />
+	<param name="Color" type="vec4" state="COLOR" />
+	<param name="time" type="float" default="0.0" />
+	<param name="delta" type="float" default="0.0" />	
+	<param name="offset" type="vec3" default="0. 0. 0." />
+	<param name="pparams" type="vec3" default="0.2 5. 3." />
+	<param name="gravity" type="vec3" default="0. -10. 0." />
+	<param name="init_velocity" type="vec4" default="0. 1. 0. 0." />
+	<texture name="randdir" />
+	<language name="glsl" version="1.5">
+		<bind param="Position" program="vp" />
+		<bind param="Velocity" program="vp" />
+		<bind param="TypeAgeID" program="vp" />
+		<bind param="Color" program="vp" />
+		<bind param="time" program="gp" />
+		<bind param="delta" program="gp" />		
+		<bind param="noise_tex" program="gp" />
+		<bind param="offset" program="gp" />
+		<bind param="pparams" program="gp" />
+		<bind param="gravity" program="gp" />
+		<bind param="init_velocity" program="gp" />
+		<program name="vp" type="vertex"  >
+		<![CDATA[
+#version 330 core 
+in vec3 Position;
+in vec3 Velocity;
+in vec3 TypeAgeID;
+in vec4 Color;
+
+out vec3 Position0;
+out vec3 Velocity0;
+out vec3 TypeAgeID0;
+out vec4 Color0;
+
+void main() {  
+	Position0 = Position;
+	Velocity0 = Velocity;
+	TypeAgeID0 = vec3(TypeAgeID.xy, gl_VertexID);
+	Color0 = Color;
+}
+		]]>
+		</program>
+		<program name="gp" type="geometry">
+		<![CDATA[
+#version 330
+
+layout(points) in;
+layout(points) out;  
+layout(max_vertices = 30) out;
+
+in vec3 Position0[];
+in vec3 Velocity0[];
+in vec3 TypeAgeID0[];
+in vec4 Color0[];
+
+out vec3 Position1;
+out vec3 Velocity1;
+out vec3 TypeAgeID1;
+out vec4 Color1;
+
+uniform float time;
+uniform float delta;
+uniform sampler1D noise_tex;
+uniform vec3 offset;
+uniform vec3 pparams;
+uniform vec3 gravity;
+uniform vec4 init_velocity;
+
+#define PARTICLE_TYPE_LAUNCHER 0.0f 
+#define PARTICLE_TYPE_PARTICLE 1.0f 
+
+vec3 getRandomDir(float tc)
+{
+	vec3 randdir = texture(noise_tex, tc).xyz;
+	randdir -= vec3(0.5, 0.5, 0.5); 
+	return randdir;  
+}  
+
+void main() 
+{
+	float launcherLifetime = pparams.x;
+	float lifetime = pparams.y; 
+	float emitCount = pparams.z;
+
+	float type = TypeAgeID0[0].x;
+	float age = TypeAgeID0[0].y + (delta);
+	float id = TypeAgeID0[0].z;
+
+	if(type == PARTICLE_TYPE_LAUNCHER) {
+		vec3 pos = Position0[0] + offset;
+		if (age >= launcherLifetime) {
+			for (int i = 0; i < emitCount; i++) {
+				Position1 = pos;
+				vec3 randdir = getRandomDir((time * id *  (i+1))/1000.); 
+				float mag = length(init_velocity.xyz);
+				randdir = mix(init_velocity.xyz, randdir, init_velocity.w);
+				Velocity1 = normalize(randdir) * mag;  
+				TypeAgeID1 = vec3(PARTICLE_TYPE_PARTICLE, 0, id);
+				Color1 = vec4(Color0[0].rgb, 1);
+				EmitVertex();  
+				EndPrimitive();
+			}
+			age = 0;
+		}
+
+		Position1 = Position0[0];
+		Velocity1 = Velocity0[0];
+		TypeAgeID1 = vec3(type, age, id);
+		Color1 = vec4(Color0[0].rgb, 0);
+		EmitVertex();
+		EndPrimitive(); 
+	}
+	else if(age < lifetime) {
+		vec3 deltaP = delta * Velocity0[0]; 
+		Position1 = Position0[0] + deltaP; 
+		Velocity1 = Velocity0[0] + (delta * gravity); 
+		TypeAgeID1 = vec3(type, age, id);
+		Color1 = Color0[0];
+		EmitVertex();
+		EndPrimitive();
+	}
+	// else particle is dead
+} 
+		]]>
+		</program>
+		<program name="fp" type="fragment"  >
+		<![CDATA[
+#version 330 core
+void main() 
+{
+}
+		]]>
+		</program>
+	</language>
+</jittershader>

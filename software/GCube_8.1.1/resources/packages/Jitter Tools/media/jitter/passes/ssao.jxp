@@ -1,0 +1,16 @@
+<jitterpass>		
+	<pass name="ssao">
+		<subpass file="mrt.ssao.render.glcore.jxs">
+			<input source="NORMALS" />
+		</subpass>
+		<subpass file="ssao.blur.x.jxs">
+			<input source="PREVIOUS" />
+			<input source="NORMALS" />
+		</subpass>
+		<subpass file="ssao.blur.y.jxs" output="COLOR" >
+			<input source="PREVIOUS" />
+			<input source="NORMALS" />
+			<input source="COLOR" />
+		</subpass>
+	</pass>
+</jitterpass>	

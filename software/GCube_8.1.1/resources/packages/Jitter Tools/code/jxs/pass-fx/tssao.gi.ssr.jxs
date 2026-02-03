@@ -1,0 +1,294 @@
+<jittershader name="default">
+	<description>Temporal-supersampled screen-space ambient occlusion with approximated GI and screen-space-reflections</description>
+	<param name="buffer_norm" 		type="int" 		default="0" />
+	<param name="buffer_pos" 		type="int" 		default="1" />
+	<param name="buffer_vel"    	type="int"    	default="2" />
+	<param name="history" 			type="int" 		default="3" />
+	<param name="history_pos"   	type="int"  	default="4" wrap="none none none"/>
+	<param name="history_col"  		type="int"  	default="5" />
+	<param name="buffer_col" 		type="int" 		default="6" wrap="none none none" /> //rectangle="0" mipmapping="bilinear"/>
+	<param name="texDim"  			type="vec2" 	state="TEXDIM6" />
+	<param name="MVP" 				type="mat4" 	state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="P" 				type="mat4" 	state="CAM_PROJECTION_MATRIX" />
+	<param name="uv"   				type="vec2"   	state="TEXCOORD" />
+	<param name="textureMatrix0" 	type="mat4" 	state="TEXTURE0_MATRIX" />
+	<param name="pos" 				type="vec3" 	state="POSITION" />
+	<param name="ao_radius"			type="float"   	default="2.4" />
+	<param name="ao_intensity"		type="float"   	default="2.4" />
+    <param name="ao_samples"        type="int"      default="2" />
+    <param name="ao_close_far"      type="float"    default="0.2" />
+    <param name="ref_length"        type="float"    default="50.0" />
+    <param name="ref_roughness"     type="float"    default="0.2" />
+    <param name="ref_iterations"    type="int"      default="1" />
+    <param name="gi_accumulation"   type="float"    default="1.7" />
+	<language name="glsl" version="1.5">
+		<bind param="buffer_norm" 		program="fp" />
+		<bind param="buffer_pos"  		program="fp" />
+		<bind param="buffer_vel"   		program="fp" />
+		<bind param="history"   		program="fp" />
+		<bind param="history_pos"   	program="fp" />
+		<bind param="history_col"   	program="fp" />
+		<bind param="buffer_col" 		program="fp" />
+		<bind param="texDim"  			program="fp" />
+		<bind param="MVP" 				program="vp" />
+		<bind param="P"   				program="fp" />
+		<bind param="uv"   				program="vp" />
+		<bind param="textureMatrix0" 	program="vp" />
+		<bind param="textureMatrix0" 	program="fp" />
+		<bind param="pos" 				program="vp" />
+		<bind param="ao_radius"  		program="fp" />
+		<bind param="ao_intensity"  	program="fp" />
+        <bind param="ao_samples"        program="fp" />
+        <bind param="ao_close_far"      program="fp" />
+        <bind param="ref_length"        program="fp" />
+        <bind param="ref_roughness"     program="fp" />
+        <bind param="ref_iterations"    program="fp" />
+        <bind param="gi_accumulation"   program="fp" />
+<program name="vp" type="vertex"  >
+<![CDATA[
+#version 330 core
+
+in vec3 pos;
+in vec2 uv;
+
+uniform mat4 MVP;
+uniform mat4 textureMatrix0;
+uniform vec3 farCorner;
+
+
+out jit_PerVertex {
+	smooth 	vec2 normUV;
+	smooth 	vec2 uv;
+} jit_out;
+
+vec3 hash( uvec3 x )
+{
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    
+    return vec3(x)*(1.0/float(0xffffffffU));
+}
+void main(void) {
+
+	gl_Position = MVP*vec4(pos, 1.);
+	jit_out.uv = vec2(textureMatrix0*vec4(uv, 1., 1.)).xy;
+	jit_out.normUV = uv;
+
+}
+]]>
+</program>
+
+<program name="fp" type="fragment"  >
+<![CDATA[
+#version 330 core
+#define TWOPI 6.28318531
+#define PI 3.14159265
+#define GOLDEN_RATIO 1.618033988749
+
+uniform mat4 			P, textureMatrix0; 
+uniform sampler2DRect 	buffer_norm, buffer_pos, buffer_col, buffer_vel, history, history_pos, history_col;
+uniform float 			ao_radius, ao_intensity, ref_length, ao_close_far, ref_roughness, gi_accumulation;
+uniform vec2 			texDim;
+uniform int             ao_samples, ref_iterations;
+
+in jit_PerVertex {
+	smooth 	vec2 normUV;
+	smooth 	vec2 uv;
+} jit_in;
+
+layout (location = 0) out vec4 occlusion;
+layout (location = 1) out vec4 gi;
+layout (location = 2) out vec4 ref;
+
+vec3 hash( uvec3 x )
+{
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    
+    return vec3(x)*(1.0/float(0xffffffffU));
+}
+
+vec2 pos2uv(in vec3 p)
+{
+    vec4 	offset 		= 	vec4(p, 1.0);
+    		offset 		= 	P * offset;
+            offset.xy   /=  offset.w;
+            offset.xy *= 0.5;
+            offset.xy += 0.5;
+    return (textureMatrix0*vec4(offset.xy, 1., 1.)).xy;
+
+}
+
+// reflect v if it's in the negative half plane defined by r
+vec3 reflVec( in vec3 v, in vec3 r )
+{
+    float k = dot(v,r);
+    return (k>0.0) ? v : v-2.0*r*k;
+}
+
+// Cosine distribution picking by iq
+vec3 hemiSpherePointCos(vec3 normal, float seed)
+{
+    vec2 lookup = hash(uvec3(jit_in.uv.x*38.2981+100.432, seed + 1., jit_in.uv.y+935.589992)).xy;//texture(buffer_rand, mod(vec2(jit_in.uv.x+1000 + seed + 3., jit_in.uv.y+1000), vec2(128))).xy;
+    float u = lookup.x;
+    float v = lookup.y;
+    float a = 6.2831853 * v;
+    u = 2.0*u - 1.0;
+    return normalize( normal + vec3(sqrt(1.0-u*u) * vec2(cos(a), sin(a)), u) );
+}
+
+/************************************ Temporal-supersampled SSAO*********************************************************
+based on: https://publik.tuwien.ac.at/files/PubDat_191582.pdf
+and: https://www.gamedev.net/tutorials/_/technical/graphics-programming-and-theory/a-simple-and-practical-approach-to-ssao-r2753/
+******************************************************************************************************************************/
+void main(void) {
+
+  	vec3 	p 			= 	texture(buffer_pos, jit_in.uv).xyz;
+  	vec3 	n 			= 	normalize(texture(buffer_norm, jit_in.uv).xyz);
+    vec3    v           =   normalize(p);
+  	vec3   	col 		= 	texture(buffer_col, jit_in.uv).rgb;
+    vec2 	vel 		= 	texture(buffer_vel, jit_in.uv).rg;
+
+    vec2 	histUV 		= 	jit_in.normUV - vel;
+    vec2  	histUVRect	=  	(textureMatrix0*vec4(histUV, 1., 1.)).xy;
+    vec2    prevVel     =   texture(buffer_vel, histUVRect).ba;
+    float   velocityLength = length(prevVel - vel);
+    float   velocityDisocclusion = clamp((velocityLength - 0.001) * 100.0, 0., 1.);
+    vec2	rectVel		=	(textureMatrix0*vec4(vel, 1., 1.)).xy;
+  	vec3 	aoHistory 	= 	texture(history, histUVRect).xyz; //occ, iterCount, prevDepth
+  	vec3  	pPrev  		= 	texture(history_pos, histUVRect).xyz;
+  	vec3 	bouncePrev 	= 	texture(history_col, histUVRect).xyz;
+  	float  	aoPrev 		= 	aoHistory.x;
+  	float   iterCount 	= 	aoHistory.y;
+  	float 	seed 		= 	aoHistory.z;
+
+
+  	bool  	validate 	= 	true;
+
+    if(histUV.x < 0. || histUV.x >= 1. || histUV.y < 0. || histUV.y >= 1. || abs(1. - (p.z / pPrev.z)) > 0.4)
+    {
+    	iterCount 	= 0.;
+    	validate 	= false;
+    }
+
+    // Loop through the sample kernel
+    float   ao = 0.0;
+    vec3    bounce = vec3(0.);
+
+    float accumulation = 1. / float(ao_samples);
+    float finalGiAccum = max(0.1, gi_accumulation); //prevent dividing by 0
+
+	for(int i = 0; i < ao_samples; i++){
+
+        float   istanceSeed = (seed*1000.*float(ao_samples*0.1) + float(i))*2.3456;
+
+        vec3    blueNoise = hemiSpherePointCos(n, istanceSeed); 
+                blueNoise = reflVec(blueNoise, n);
+
+        float   randRadius = hash(uvec3(jit_in.uv.x+140.46252+float(i)*4.321, seed*1000. + 2.2734, jit_in.uv.y+130.42749+float(i)*56.57463)).x;
+                blueNoise *= ao_radius * mix(randRadius*randRadius*randRadius, randRadius, ao_close_far);
+
+        vec3 sample = p + blueNoise;
+        // project sample position (to sample texture) (to get position on screen/texture)
+		vec2	rectUV = pos2uv(sample);
+
+        // get sample depth
+        vec3 	samplePos 		= texture(buffer_pos, rectUV).xyz;
+        vec3 	samplePosPrev 	= texture(history_pos, rectUV - rectVel).xyz;
+        float 	dist 			= length(p - samplePos);
+
+ 		if(validate){
+ 		 	validate = abs( abs(samplePos.z - p.z) - abs(samplePosPrev.z - pPrev.z) ) < 0.3;
+ 		}
+
+        // range check & accumulate
+        float 	rangeCheck 	= 	dist <= ao_radius ? 1.0 : 0.0;
+        //float thisAO = samplePos.z >= sample.z ? accumulation*rangeCheck : 0.0;   
+        float thisAO = samplePos.z >= sample.z ? accumulation*rangeCheck : 0.0; 
+        		ao 			+= 	thisAO;  
+        		bounce 		+= 	texture(buffer_col, rectUV).rgb * rangeCheck / (1.0 + dist*dist);// * diffuse;// / (1.0 + dist*dist);
+    }
+
+            ao *= ao_intensity;
+            ao /= ao + 1.,
+    		bounce 	*= 	accumulation;
+
+    		seed 	= mod(seed + 0.001, 1.);
+
+	float  	blend 		=	validate ? 1. / (iterCount*100. + 1.) : 1.; 
+			blend 		= 	max(blend, 0.05);
+	  		iterCount 	= 	validate ? iterCount + 0.01 : 0.;
+	float  	finalAo     = 	mix(aoPrev, ao, validate ? 0.1 : 1.);
+            finalAo     =   mix(finalAo, ao, velocityDisocclusion);
+	  		gi 			= 	vec4( mix(bouncePrev, bounce, vec3(min(0.99, blend/finalGiAccum))), 1.); 
+            gi.rgb      =   mix(gi.rgb, bounce, vec3(velocityDisocclusion));
+	  		gi.rgb 		=  	clamp(gi.rgb, vec3(0.), vec3(40.)); 
+    		occlusion 	= 	vec4(finalAo, iterCount, seed, p.z);
+
+
+
+    //REFLECTIONS
+    {
+        ref.rgb = vec3(0., 0., 0.);
+
+        float   stepSize   = 8.0;
+        float   maxSteps   = ref_length;
+
+        float   thickness  = 0.25;
+
+        vec3    r = reflect(v, n);
+        
+        vec3    startPos  = p;
+        vec3    endPos    = startPos + r;
+
+        vec2    startFrag = jit_in.uv;
+        vec2    endFrag   = pos2uv(endPos);
+
+        vec2    deltaFrag = endFrag - startFrag;
+        float   deltaDepth = endPos.z - startPos.z;
+
+        vec2    fragDir = deltaFrag / length(deltaFrag);
+        float   depthDir = deltaDepth / length(deltaFrag);
+
+        for(int i = 0; i < ref_iterations; i++){
+
+            vec3    jitter = hash(uvec3(jit_in.uv.x*384.7654+170.3432+float(i)*34.291, seed*1000 + float(i) + 1., jit_in.uv.y+385.592832));
+            vec2    currFragDir = fragDir + (jitter.xy-0.5)*ref_roughness;
+            float   currStepSize = stepSize + jitter.z * stepSize * 0.5;
+
+            vec2    fragStep    = currFragDir * currStepSize;
+            float   depthStep   = depthDir * currStepSize;
+
+            vec2    currFrag    = startFrag + fragStep;
+            float   currDepth   = startPos.z + depthStep;
+
+
+            for(float f = 1; f <= maxSteps; f += 1.0){
+
+                float    actualDepth    = texture(buffer_pos, currFrag).z;
+
+                if(currFrag.x < 0.0 || currFrag.y < 0.0 || currFrag.x >= texDim.x || currFrag.y >= texDim.y) break;
+                float depthDifference = (actualDepth - currDepth) / thickness;
+                if(actualDepth > currDepth && depthDifference < 1.)
+                {
+                    ref.rgb +=   currStepSize   * texture(buffer_col, currFrag).rgb 
+                                                * smoothstep(1., 0., f/maxSteps) ;
+                    break;
+                }  
+
+                currFrag += fragStep;
+                currDepth += depthStep;
+
+            }
+        }
+        ref.rgb /= float(ref_iterations);
+        ref.a   = 0.1 + 0.9*pow(1. - max(dot(-v, n), 0.), 5.);
+    }
+}
+
+]]>
+</program>
+</language>
+</jittershader>

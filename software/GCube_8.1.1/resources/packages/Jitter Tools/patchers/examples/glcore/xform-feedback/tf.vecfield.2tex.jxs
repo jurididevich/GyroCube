@@ -1,0 +1,59 @@
+<jittershader name="tf.vecfield.2tex.jxs">
+	<description>Basic Vectorfield</description>
+	<param name="position" type="vec3" state="POSITION" />
+	<param name="speedX" type="float" default="0.005" />
+	<param name="speedY" type="float" default="0.005" />
+	<param name="bfg_tex0" type="int" default="0" />
+	<param name="bfg_tex1" type="int" default="1" />
+	<language name="glsl" version="1.5">
+		<bind param="position" program="vp" />
+		<bind param="speedX" program="vp" />
+		<bind param="speedY" program="vp" />
+		<bind param="bfg_tex0" program="vp" />
+		<bind param="bfg_tex1" program="vp" />
+		<program name="vp" type="vertex">
+<![CDATA[
+#version 330 core
+
+uniform float speedX;
+uniform float speedY;
+
+// <texture name="tex0" />
+uniform sampler2D bfg_tex0;
+// <texture name="tex1" />
+uniform sampler2D bfg_tex1;
+
+// <param name=position state=POSITION />
+in vec3 position;
+
+// [jit.gl.buffer @outname posOut @type position]
+out vec3 posOut;
+
+void main() {
+	// normalize position from -1 1 to 0-1
+	vec2 normPos = position.xy * 0.5 + 0.5;
+
+	// lookup value from texture based on particle coordinate
+	float velX = (texture(bfg_tex0, normPos).x * 2 - 1) * speedX;
+	float velY = (texture(bfg_tex1, normPos).y * 2 - 1) * speedY;
+
+	// apply velocity to position
+	float posX = position.x + velX * 0.001;
+	float posY = position.y + velY * 0.001;
+
+	// combine new positions and wrap between -1/1;
+	posOut = mod(vec3(posX, posY, position.z) + 1, 2) - 1;
+}
+]]>
+		</program>
+
+		<program name="fp" type="fragment"  >
+		<![CDATA[
+#version 330 core
+void main() 
+{
+}
+		]]>
+		</program>
+	</language>
+</jittershader>

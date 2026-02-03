@@ -1,0 +1,176 @@
+<jittershader name="default">
+	<description>screen-space-reflections</description>
+	<param name="buffer_norm" 		type="int" 		default="0" />
+	<param name="buffer_pos" 		type="int" 		default="1" />
+	<param name="buffer_col" 		type="int" 		default="2" wrap="none none none" /> //rectangle="0" mipmapping="bilinear"/>
+	<param name="texDim"  			type="vec2" 	state="TEXDIM2" />
+	<param name="MVP" 				type="mat4" 	state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="P" 				type="mat4" 	state="CAM_PROJECTION_MATRIX" />
+	<param name="uv"   				type="vec2"   	state="TEXCOORD" />
+	<param name="textureMatrix0" 	type="mat4" 	state="TEXTURE0_MATRIX" />
+	<param name="pos" 				type="vec3" 	state="POSITION" />
+    <param name="ref_length"        type="float"    default="50.0" />
+    <param name="ref_roughness"     type="float"    default="0.2" />
+    <param name="ref_iterations"    type="int"      default="1" />
+    <param name="ref_amnt"          type="float"    default="0.1" />
+	<language name="glsl" version="1.5">
+		<bind param="buffer_norm" 		program="fp" />
+		<bind param="buffer_pos"  		program="fp" />
+		<bind param="buffer_col" 		program="fp" />
+		<bind param="texDim"  			program="fp" />
+		<bind param="MVP" 				program="vp" />
+		<bind param="P"   				program="fp" />
+		<bind param="uv"   				program="vp" />
+		<bind param="textureMatrix0" 	program="vp" />
+		<bind param="textureMatrix0" 	program="fp" />
+		<bind param="pos" 				program="vp" />
+        <bind param="ref_length"        program="fp" />
+        <bind param="ref_roughness"     program="fp" />
+        <bind param="ref_iterations"    program="fp" />
+        <bind param="ref_amnt"          program="fp" />
+<program name="vp" type="vertex"  >
+<![CDATA[
+#version 330 core
+
+in vec3 pos;
+in vec2 uv;
+
+uniform mat4 MVP;
+uniform mat4 textureMatrix0;
+uniform vec3 farCorner;
+
+
+out jit_PerVertex {
+	smooth 	vec2 normUV;
+	smooth 	vec2 uv;
+} jit_out;
+
+vec3 hash( uvec3 x )
+{
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    
+    return vec3(x)*(1.0/float(0xffffffffU));
+}
+void main(void) {
+
+	gl_Position = MVP*vec4(pos, 1.);
+	jit_out.uv = vec2(textureMatrix0*vec4(uv, 1., 1.)).xy;
+	jit_out.normUV = uv;
+
+}
+]]>
+</program>
+
+<program name="fp" type="fragment"  >
+<![CDATA[
+#version 330 core
+#define TWOPI 6.28318531
+#define PI 3.14159265
+#define GOLDEN_RATIO 1.618033988749
+
+uniform mat4 			P, textureMatrix0; 
+uniform sampler2DRect 	buffer_norm, buffer_pos, buffer_col;
+uniform float 			ref_length, ref_roughness, ref_amnt;
+uniform vec2 			texDim;
+uniform int             ref_iterations;
+
+in jit_PerVertex {
+	smooth 	vec2 normUV;
+	smooth 	vec2 uv;
+} jit_in;
+
+layout (location = 0) out vec4 color;
+
+vec3 hash( uvec3 x )
+{
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    x = ((x>>8U)^x.yzx)*1103515245U;
+    
+    return vec3(x)*(1.0/float(0xffffffffU));
+}
+
+vec2 pos2uv(in vec3 p)
+{
+    vec4 	offset 		= 	vec4(p, 1.0);
+    		offset 		= 	P * offset;
+            offset.xy   /=  offset.w;
+            offset.xy *= 0.5;
+            offset.xy += 0.5;
+    return (textureMatrix0*vec4(offset.xy, 1., 1.)).xy;
+
+}
+
+void main(void) {
+
+  	vec3 	p 			= 	texture(buffer_pos, jit_in.uv).xyz;
+  	vec3 	n 			= 	normalize(texture(buffer_norm, jit_in.uv).xyz);
+    vec3    v           =   normalize(p);
+    vec4    col         =   texture(buffer_col, jit_in.uv);
+
+//REFLECTIONS
+    vec3    ref = vec3(0.);
+
+    float   stepSize   = 8.0;
+    float   maxSteps   = ref_length;
+
+    float   thickness  = 0.25;
+
+    vec3    r = reflect(v, n);
+    
+    vec3    startPos  = p;
+    vec3    endPos    = startPos + r;
+
+    vec2    startFrag = jit_in.uv;
+    vec2    endFrag   = pos2uv(endPos);
+
+    vec2    deltaFrag = endFrag - startFrag;
+    float   deltaDepth = endPos.z - startPos.z;
+
+    vec2    fragDir = deltaFrag / length(deltaFrag);
+    float   depthDir = deltaDepth / length(deltaFrag);
+
+    for(int i = 0; i < ref_iterations; i++){
+
+        vec3    jitter = hash(uvec3(jit_in.uv.x*384.7654+170.3432+float(i)*34.291, 20. + float(i) + 1., jit_in.uv.y+385.592832));
+        vec2    currFragDir = fragDir + (jitter.xy-0.5)*ref_roughness;
+        float   currStepSize = stepSize + jitter.z * stepSize * 0.5;
+
+        vec2    fragStep    = currFragDir * currStepSize;
+        float   depthStep   = depthDir * currStepSize;
+
+        vec2    currFrag    = startFrag + fragStep;
+        float   currDepth   = startPos.z + depthStep;
+
+
+        for(float f = 1; f <= maxSteps; f += 1.0){
+
+            float    actualDepth    = texture(buffer_pos, currFrag).z;
+
+            if(currFrag.x < 0.0 || currFrag.y < 0.0 || currFrag.x >= texDim.x || currFrag.y >= texDim.y) break;
+            float depthDifference = (actualDepth - currDepth) / thickness;
+            if(actualDepth > currDepth && depthDifference < 1.)
+            {
+                ref +=   currStepSize   * texture(buffer_col, currFrag).rgb 
+                                        * smoothstep(1., 0., f/maxSteps) ;
+                break;
+            }  
+
+            currFrag += fragStep;
+            currDepth += depthStep;
+
+        }
+    }
+    ref /= float(ref_iterations);
+    float fresnel   = 0.1 + 0.9*pow(1. - max(dot(-v, n), 0.), 5.);
+    color.rgb = col.rgb + ref*mix(0., ref_amnt, fresnel);
+    color.a = col.a;
+
+}
+
+]]>
+</program>
+</language>
+</jittershader>

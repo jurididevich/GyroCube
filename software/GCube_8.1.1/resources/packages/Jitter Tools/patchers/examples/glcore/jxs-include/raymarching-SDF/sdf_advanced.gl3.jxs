@@ -1,0 +1,421 @@
+<jittershader name="default">
+	<param name="sdf_iterations" type="int" default="200" />
+	<param name="p1_pos" type="vec3" default="0. 0. 0." />
+	<param name="p1_rad" type="float" default="0.25" />
+	<param name="p1_radB" type="float" default="0.05" />
+	<param name="p1_rot" type="vec3" default="0. 0. 0." />
+	<param name="p1_scale" type="vec3" default="0.25 0.25 0.25" />
+	<param name="shape1" type="int" default="0" />
+	<param name="p2_pos" type="vec3" default="0. 0. 0." />
+	<param name="p2_rad" type="float" default="0.25" />
+	<param name="p2_radB" type="float" default="0.05" />
+	<param name="p2_rot" type="vec3" default="0. 0. 0." />
+	<param name="p2_scale" type="vec3" default="0.25 0.25 0.25" />
+	<param name="shape2" type="int" default="0" />
+	<param name="p3_pos" type="vec3" default="0. 0. 0." />
+	<param name="p3_rad" type="float" default="0.25" />
+	<param name="p3_radB" type="float" default="0.05" />
+	<param name="p3_rot" type="vec3" default="0. 0. 0." />
+	<param name="p3_scale" type="vec3" default="0.25 0.25 0.25" />
+	<param name="shape3" type="int" default="0" />
+	<param name="p4_pos" type="vec3" default="0. 0. 0." />
+	<param name="p4_rad" type="float" default="0.25" />
+	<param name="p4_radB" type="float" default="0.05" />
+	<param name="p4_rot" type="vec3" default="0. 0. 0." />
+	<param name="p4_scale" type="vec3" default="0.25 0.25 0.25" />	
+	<param name="shape4" type="int" default="0" />	
+	<param name="opId1" type="int" default="0" />
+	<param name="opId2" type="int" default="1" />
+	<param name="opId3" type="int" default="2" />
+	<param name="sm1" type="float" default=".15" />
+	<param name="sm2" type="float" default=".15" />
+	<param name="sm3" type="float" default=".15" />
+	<param name="stop_threshold" type="float" default="0.001" />
+	<param name="grad_step" type="float" default="0.001" />
+	<param name="max_distance" type="float" default="10." />
+	<param name="campos" type="vec3" state="CAMERA_POSITION" />
+	<param name="camdir" type="vec3" state="CAMERA_DIRECTION" />
+	<param name="rotate" type="vec3" default="0. 0. 0." />
+	<param name="diffuse_color" type="vec4" default="1. 1. 1. 1." />
+	<param name="l1_color" type="vec3" default="0.9 0.9 0.9" />
+	<param name="l1_direction" type="vec3" default="-0.75 1. 1." />
+	<param name="a_color" type="vec3" default="0.1 0.1 0.1" />
+	<param name="ao" type="float" default="0.25" />
+	<param name="ao_iterations" type="int" default="5" />
+	<param name="depthmap" type="float" default="0." />
+	<param name="tex0" type="int" default="0" />
+	<param name="tex1" type="int" default="1" />
+	<param name="modelViewProjectionMatrix" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="textureMatrix0" type="mat4" state="TEXTURE0_MATRIX" />
+	<param name="textureMatrix1" type="mat4" state="TEXTURE1_MATRIX" />
+	<param name="jit_position" type="vec3" state="POSITION" />
+	<param name="jit_texcoord" type="vec2" state="TEXCOORD" />
+	
+	<language name="glsl" version="1.5">
+		<bind param="sdf_iterations" program="fp" />
+		<bind param="p1_pos" program="fp" />
+		<bind param="p1_rad" program="fp" />
+		<bind param="p1_radB" program="fp" />
+		<bind param="p1_rot" program="fp" />
+		<bind param="p1_scale" program="fp" />
+		<bind param="shape1" program="fp" />
+		<bind param="p2_pos" program="fp" />
+		<bind param="p2_rad" program="fp" />
+		<bind param="p2_radB" program="fp" />
+		<bind param="p2_rot" program="fp" />
+		<bind param="p2_scale" program="fp" />
+		<bind param="shape2" program="fp" />
+		<bind param="p3_pos" program="fp" />
+		<bind param="p3_rad" program="fp" />
+		<bind param="p3_radB" program="fp" />
+		<bind param="p3_rot" program="fp" />
+		<bind param="p3_scale" program="fp" />
+		<bind param="shape3" program="fp" />
+		<bind param="p4_pos" program="fp" />
+		<bind param="p4_rad" program="fp" />
+		<bind param="p4_radB" program="fp" />
+		<bind param="p4_rot" program="fp" />
+		<bind param="p4_scale" program="fp" />
+		<bind param="shape4" program="fp" />
+		<bind param="sm1" program="fp" />
+		<bind param="sm2" program="fp" />
+		<bind param="sm3" program="fp" />
+		<bind param="opId1" program="fp" />
+		<bind param="opId2" program="fp" />
+		<bind param="opId3" program="fp" />
+		<bind param="stop_threshold" program="fp" />
+		<bind param="grad_step" program="fp" />
+		<bind param="max_distance" program="fp" />
+		<bind param="campos" program="fp" />
+		<bind param="camdir" program="fp" />
+		<bind param="diffuse_color" program="fp" />
+		<bind param="l1_color" program="fp" />
+		<bind param="l1_direction" program="fp" />
+		<bind param="a_color" program="fp" />
+		<bind param="ao" program="fp" />
+		<bind param="ao_iterations" program="fp" />
+		<bind param="rotate" program="fp" />
+		<bind param="depthmap" program="fp" />
+		<bind param="tex0" program="fp" />
+		<bind param="tex1" program="fp" />
+		<bind param="modelViewProjectionMatrix" program="vp" />
+		<bind param="textureMatrix0" program="vp" />
+		<bind param="textureMatrix1" program="vp" />
+		<bind param="jit_position" program="vp" />
+		<bind param="jit_texcoord" program="vp" />
+        <include source="sdf_shape_primitives.glsl" program="fp" />
+        <include source="sdf_compositing.glsl" program="fp" />
+		<include source="sdf_transforms.glsl" program="fp" />
+		<program name="vp" type="vertex">
+
+			<![CDATA[
+			#version 330 core
+			
+in vec3 jit_position;
+in vec2 jit_texcoord;
+out jit_PerVertex {
+	vec2 texdim1;
+	vec2 texdim;
+	vec2 texcoord1;
+	vec2 texcoord;
+} jit_out;
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 textureMatrix0;
+uniform mat4 textureMatrix1;
+
+void main(void) {
+	gl_Position = modelViewProjectionMatrix*vec4(jit_position, 1.);
+	jit_out.texcoord = vec2(textureMatrix0 * vec4(jit_texcoord, 0., 1.));
+	jit_out.texcoord1 = vec2(textureMatrix1 * vec4(jit_texcoord, 0., 1.));
+	jit_out.texdim = vec2(abs(textureMatrix0[0][0]), abs(textureMatrix0[1][1]));
+	jit_out.texdim1 = vec2(abs(textureMatrix1[0][0]), abs(textureMatrix1[1][1]));
+}
+		]]>
+		</program>
+		<program name="fp" type="fragment">
+			<![CDATA[
+			#version 330 core
+			
+			in jit_PerVertex {
+				vec2 texdim1;
+				vec2 texdim;
+				vec2 texcoord1;
+				vec2 texcoord;
+			} jit_in;
+			layout (location = 0) out vec4 outColor;
+			
+			uniform sampler2DRect tex0;
+			uniform sampler2DRect tex1;
+			uniform int sdf_iterations;
+			uniform vec3 p1_pos;
+			uniform vec3 p1_scale;
+			uniform float p1_rad;
+			uniform float p1_radB;
+			uniform vec3 p1_rot;
+			uniform int shape1;
+			uniform vec3 p2_pos;
+			uniform vec3 p2_scale;
+			uniform float p2_rad;
+			uniform float p2_radB;
+			uniform vec3 p2_rot;
+			uniform int shape2;
+			uniform vec3 p3_pos;
+			uniform vec3 p3_scale;
+			uniform float p3_rad;
+			uniform float p3_radB;
+			uniform vec3 p3_rot;
+			uniform int shape3;
+			uniform vec3 p4_pos;
+			uniform vec3 p4_scale;
+			uniform float p4_rad;
+			uniform float p4_radB;
+			uniform vec3 p4_rot;
+			uniform int shape4;
+
+			uniform float sm1;
+			uniform float sm2;
+			uniform float sm3;
+			uniform int opId1;
+			uniform int opId2;
+			uniform int opId3;
+
+			uniform int volume_iterations;
+			uniform int ao_iterations;
+			uniform float stop_threshold;
+			uniform float max_distance;
+			uniform float grad_step;
+			uniform vec3 campos;
+			uniform vec3 camdir;
+			uniform vec3 rotate;
+			uniform vec4 diffuse_color;
+			uniform vec3 l1_color;
+			uniform vec3 l1_direction;
+			uniform vec3 a_color;
+			uniform float ao;
+			uniform float depthmap;	
+			const float clip_near = 0.1;
+			const float clip_far = 50.0;
+
+			mat3 objRot;
+			mat3 camRot;
+			mat4 Rot4X();
+			mat4 Rot4Y();
+			mat4 Rot4Z();
+			mat4 Loc4();
+
+            
+			vec3 rayDirection(float fieldOfView , vec2 size , vec2 fragCoord ) {
+				vec2 xy = fragCoord - size / 2.0;
+				float z = size.y / tan(radians(fieldOfView) / 2.0);
+				return normalize(vec3(xy, -z));
+			}
+			mat3 calcLookAtMatrix(in vec3 ro, in vec3 ta, in float roll) {
+				vec3 ww = normalize(ta - ro);
+				vec3 uu = normalize(cross(ww, vec3(sin(roll), cos(roll), 0.0)));
+				vec3 vv = normalize(cross(uu, ww));
+				return mat3(uu, vv, ww);
+			}
+
+			//Here we create the scene
+			vec2 map(vec3 pos ) {
+				pos = pos * objRot;
+
+
+
+				//define the location of first primitive (translation)
+				vec3 p1p = opTx( pos,  Loc4(p1_pos.xyz));
+				//rotate the primitive
+				p1p = opTx( p1p, Rot4X( p1_rot.x ) );
+  				p1p = opTx( p1p, Rot4Y( p1_rot.y ) );
+  				p1p = opTx( p1p, Rot4Z( p1_rot.z ) );
+				//draw the primitive at a scale. The sdf primitives are stored in sdf_shape_primitives.glsl
+				float p1 = 0.;
+				if (shape1 == 0) {
+				    p1 = sdfBox(p1p, p1_scale);
+					} else if (shape1 == 1) {
+					    p1 = sdfSphere(p1p, vec3(0., 0., 0.), p1_rad);
+					} else if (shape1 == 2) {
+					    p1 = sdfOctahedron(p1p, p1_rad);
+					} else if (shape1 == 3) {
+				    	p1 = sdfTorus(p1p, vec2(p1_rad, p1_radB));
+				}
+
+
+				//second primitive
+				vec3 p2p = opTx( pos,  Loc4(p2_pos.xyz));
+
+				p2p = opTx( p2p, Rot4X( p2_rot.x ) );
+  				p2p = opTx( p2p, Rot4Y( p2_rot.y ) );
+  				p2p = opTx( p2p, Rot4Z( p2_rot.z ) );	
+
+				float p2 = 0.;
+				if (shape2 == 0) {
+				    p2 = sdfBox(p2p, p2_scale);
+					} else if (shape2 == 1) {
+					    p2 = sdfSphere(p2p, vec3(0.,0.,0.), p2_rad);
+					} else if (shape2 == 2) {
+					    p2 = sdfOctahedron(p2p, p2_rad);
+					} else if (shape2 == 3) {
+				    	p2 = sdfTorus(p2p, vec2(p2_rad, p2_radB));
+				}
+				//third primitive
+				vec3 p3p = opTx( pos,  Loc4(p3_pos.xyz));
+
+				p3p = opTx( p3p, Rot4X( p3_rot.x ) );
+  				p3p = opTx( p3p, Rot4Y( p3_rot.y ) );
+  				p3p = opTx( p3p, Rot4Z( p3_rot.z ) );
+
+				float p3 = 0.;
+				if (shape3 == 0) {
+				    p3 = sdfBox(p3p, p3_scale);
+					} else if (shape3 == 1) {
+					    p3 = sdfSphere(p3p, vec3(0.,0.,0.), p3_rad);
+					} else if (shape3 == 2) {
+					    p3 = sdfOctahedron(p3p, p3_rad);
+					} else if (shape3 == 3) {
+				    	p3 = sdfTorus(p3p, vec2(p3_rad, p3_radB));
+				}
+
+				//fourth primitive
+				vec3 p4p = opTx( pos,  Loc4(p4_pos.xyz));
+
+				p4p = opTx( p4p, Rot4X( p4_rot.x ) );
+  				p4p = opTx( p4p, Rot4Y( p4_rot.y ) );
+  				p4p = opTx( p4p, Rot4Z( p4_rot.z ) );
+
+				float p4 = 0.;
+				if (shape4 == 0) {
+				    p4 = sdfBox(p4p, p4_scale);
+					} else if (shape4 == 1) {
+					    p4 = sdfSphere(p4p, vec3(0.,0.,0.), p4_rad);
+					} else if (shape4 == 2) {
+					    p4 = sdfOctahedron(p4p, p4_rad);
+					} else if (shape4 == 3) {
+				    	p4 = sdfTorus(p4p, vec2(p4_rad, p4_radB));
+				}
+
+				
+				
+				//combine the primitives. The combine ops are stored in sdf_compositing.glsl
+				float d = p1;
+				if (opId1 == 0) {
+				    d = opSmoothUnion(d, p2, sm1);
+				} else if (opId1 == 1) {
+				    d = opSmoothSubtraction(d, p2, sm1);
+				} else if (opId1 == 2) {
+				    d = opSmoothIntersection(d, p2, sm1);
+				} else if (opId1 == 3) {
+					d = opUnion(d, p2);
+				} else if (opId1 == 4) {
+					d = opSubtraction(d, p2);
+				} else if (opId1 == 5) {
+					d = opIntersection(d, p2);
+				}
+
+
+				if (opId2 == 0) {
+				    d = opSmoothUnion(d, p3, sm2);
+				} else if (opId2 == 1) {
+				    d = opSmoothSubtraction(d, p3, sm2);
+				} else if (opId2 == 2) {
+				    d = opSmoothIntersection(d, p3, sm2);
+				} else if (opId2 == 3) {
+					d = opUnion(d, p3);
+				} else if (opId2 == 4) {
+					d = opSubtraction(d, p3);
+				} else if (opId2 == 5) {
+					d = opIntersection(d, p3);
+				}
+
+				if (opId3 == 0) {
+				    d = opSmoothUnion(d, p4, sm3);
+				} else if (opId3 == 1) {
+				    d = opSmoothSubtraction(d, p4, sm3);
+				} else if (opId3 == 2) {
+				    d = opSmoothIntersection(d, p4, sm3);
+				} else if (opId3 == 3) {
+					d = opUnion(d, p4);
+				} else if (opId3 == 4) {
+					d = opSubtraction(d, p4);
+				} else if (opId3 == 5) {
+					d = opIntersection(d, p4);
+				}
+
+				vec2 comp = vec2(d, 1.);
+				return comp;
+			}
+			vec2 calcIntersection(in vec3 ro, in vec3 rd) {
+				float h = stop_threshold * 2.0;
+				float t = 0.0;
+				float res = -1.0;
+				float id = -1.;
+				for(int i = 0; i < sdf_iterations; i++)  {
+					if(h < stop_threshold || t > max_distance)break;
+					vec2 m = map(ro + rd * t);
+					h = m.x;
+					t += h;
+					id = m.y;
+				}
+				res = mix(res, t, float(t < max_distance));
+				id = mix(id, -1.0, float(t > max_distance));
+				return vec2(res, id);
+			}
+			vec3 calcNormal(vec3 pos ) {
+				vec3 eps = vec3(grad_step, 0.0, 0.0);
+				vec3 nor = vec3(map(pos + eps.xyy).x - map(pos - eps.xyy).x, map(pos + eps.yxy).x - map(pos - eps.yxy).x, map(pos + eps.yyx).x - map(pos - eps.yyx).x);
+				return normalize(nor);
+			}
+			float calcAO(vec3 pos , vec3 nor ) {
+				if(ao <= 0.00)return 1.;
+				float occ = 0.0;
+				float sca = 2.0;
+				float aoi = float(ao_iterations);
+				for(int i = 0; i < ao_iterations; i++)  {
+					float h = 0.001 + 0.08 * float(i) / ((aoi - 1.) + 0.00001);
+					float d = map(pos + h * nor).x;
+					occ += (h - d) * sca;
+					sca *= 1. - (1. / aoi);
+				}
+				return clamp(1.0 - ao * occ, 0.0, 1.0);
+			}
+			vec3 diffuseLight(vec3 p , vec3 eye2 , vec3 N , vec3 lightPos , vec3 lightIntensity ) {
+				vec3 L = normalize(lightPos);
+				vec3 V = normalize(eye2 - p);
+				vec3 R = normalize(reflect(-L, N));
+				float dotLN = dot(L, N);
+				float dotRV = dot(R, V);
+				if(dotLN < 0.0) {
+					return vec3(0.0, 0.0, 0.0);
+				}
+				return lightIntensity * dotLN * diffuse_color.rgb;
+			}
+			vec3 render(vec2 res , vec3 ro , vec3 rd ) {
+				vec3 color = vec3(0., 0., 0.);
+				if(res.y > -0.9) {
+					vec3 p = ro + rd * res.x;
+					vec3 norm = calcNormal(p);
+					color += a_color;
+					color += diffuseLight(p, ro, norm, l1_direction, l1_color) * diffuse_color.a;
+					float occ = calcAO(p, norm);
+					color *= occ;
+				}
+				return color;
+			}
+			void main(void) {
+				vec2 p = (-jit_in.texdim.xy + 2.0 * jit_in.texcoord) / jit_in.texdim.y;
+				p *= vec2(1., -1.);
+				vec3 ro = campos;
+				//vec3 ta = campos + camdir;
+				objRot = rot3Dmat(rotate);
+				mat3 camMat = calcLookAtMatrix(ro, vec3(0.,0.,0.), 0.);
+				vec3 rd = camMat * vec3(p.xy, 2.0);
+				rd = normalize(rd);
+				vec2 res = calcIntersection(ro, rd);
+				vec3 color = render(res, ro, rd);
+				color = mix(color, vec3(1. - res.x / max_distance), depthmap);
+				outColor = mix(vec4(0.), vec4(color, 1.0), float(res.y > -0.5));
+			}
+		]]>
+		</program>
+	</language>
+</jittershader>

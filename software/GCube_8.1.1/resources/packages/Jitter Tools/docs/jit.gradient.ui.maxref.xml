@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object name="jit.gradient.ui">
+
+    <digest>
+        GUI for creating 1-dimensional gradient matrices
+    </digest>
+
+    <description>
+        The <o>jit.gradient.ui</o> object provides a handy GUI for creating and manipulating 4-plane 1-dimensional gradient matrices. Functionality is similar to the <o>jit.gradient</o> object.
+    </description>
+
+    <!--METADATA-->
+    <metadatalist>
+        <metadata name="tag">Jitter-Tools</metadata>
+        <metadata name="tag">Jitter</metadata>
+    </metadatalist>
+
+    <!--MESSAGES-->
+    <methodlist>
+        <method name="alpha_last">
+            <digest>
+                Set which plane contains the alpha values (default = 0)
+            </digest>
+            <description>
+                The word <m>alpha_last</m>, followed by a zero or 1, sets which plane in the matrix contains the alpha values (default = 0). When <m>alpha_last</m> is disabled (set to 0). the output format is ARGB. When <m>alpha_last</m> is enabled (set to 1). the output format is RGBA.
+            </description>
+        </method>
+        <method name="bang">
+            <digest>
+                Output the gradient matrix
+            </digest>
+            <description>
+                A <m>bang</m> message will cause the object to send the current gradient matrix out the object's outlet.
+            </description>
+        </method>
+        <method name="clear">
+            <digest>
+                Clear all colors but the first
+            </digest>
+            <description>
+                The word <m>clear</m> will clear all colors from the matrix except for the first (index 0).
+            </description>
+        </method>
+        <method name="move_pointer">
+            <digest>
+                Position a pointer index
+            </digest>
+            <description>
+                The word <m>move_pointer</m>, followed by an integer which specifies the pointer index and a floating-point number in the range 0. - 1.0 will position the pointer index along the range of the gradient.
+            </description>
+        </method>
+        <method name="output_matrix_dim" type="int">
+            <digest>
+                Set the output matrix dimension (default = 20)
+            </digest>
+            <description>
+                The word <m>output_matrix_dim</m>, followed by an integer, specifies the dimension (size) of the gradient matrix. The size is related to the gradient resolution of the output matrix; a smaller size will result in a gradient with fewer shades.
+            </description>
+        </method>
+        <method name="pointer_color">
+            <digest>
+                Set a pointer index color
+            </digest>
+            <description>
+                The word <m>pointer_color</m>, followed by an integer which specifies the pointer index and four floating-point numbers in the range 0. - 1.0 sets the color for a pointer index along the range of the gradient.
+            </description>
+        </method>
+    </methodlist>
+    <attributelist>
+    </attributelist>
+
+<!--SEEALSO-->
+    <seealsolist>
+        <seealso name="jit.gradient"/>
+        <seealso name="jit.mgraphics"/>
+    </seealsolist>
+
+</c74object>

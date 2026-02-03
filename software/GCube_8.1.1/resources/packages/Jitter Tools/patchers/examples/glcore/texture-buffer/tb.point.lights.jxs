@@ -1,0 +1,121 @@
+<jittershader name="fill-flat-quads">
+	<param name="modelViewProjectionMatrix" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="modelViewMatrix" type="mat4" state="MODELVIEW_MATRIX" />
+	<param name="viewMatrix" type="mat4" state="VIEW_MATRIX" />
+	<param name="textureMatrix0" type="mat4" state="TEXTURE0_MATRIX" />
+	<param name="jit_position" type="vec3" state="POSITION" />
+	<param name="jit_texcoord" type="vec2" state="TEXCOORD" />
+	<param name="jit_normal" type="vec3" state="NORMAL" />
+	<param name="FrontMaterialParameters" state="FRONT_MATERIAL" />
+	<param name="numLights" type="int" default="1" />
+	<param name="atten" type="float" default="1.0" />
+	<param name="tex" type="int" default="0" />
+	<param name="lightPos" type="int" default="1" />
+	<param name="lightColor" type="int" default="2" />
+	<language name="glsl" version="1.5">
+		<bind param="modelViewProjectionMatrix" program="vs" />
+		<bind param="modelViewMatrix" program="vs" />
+		<bind param="viewMatrix" program="fs" />
+		<bind param="textureMatrix0" program="vs" />
+		<bind param="jit_position" program="vs" />
+		<bind param="jit_texcoord" program="vs" />
+		<bind param="jit_normal" program="vs" />
+		<bind param="FrontMaterialParameters" program="fs" />
+		<bind param="numLights" program="fs" />
+		<bind param="atten" program="fs" />
+		<bind param="tex" program="fs" />
+		<bind param="lightPos" program="fs" />
+		<bind param="lightColor" program="fs" />
+		<program name="vs" type="vertex">
+			<![CDATA[
+#version 330 core
+
+in vec3 jit_position;
+in vec2 jit_texcoord;
+in vec3 jit_normal;
+out jit_PerVertex {
+	vec4 jit_Surface_position;
+	vec2 jit_Surface_texcoord0;
+	vec3 jit_Surface_normal;
+} jit_out;
+uniform mat4 textureMatrix0;
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 modelViewMatrix;
+void main() {
+	jit_out.jit_Surface_normal = transpose(inverse(mat3x3(modelViewMatrix))) * jit_normal;
+	jit_out.jit_Surface_texcoord0 = vec2(textureMatrix0*vec4(jit_texcoord, 0., 1.));
+	jit_out.jit_Surface_position = modelViewMatrix * vec4(jit_position, 1.);
+	gl_Position = modelViewProjectionMatrix*vec4(jit_position, 1.);
+}
+		]]>
+		</program>
+		<program name="fs" type="fragment">
+<![CDATA[
+#version 330 core
+
+// point-light rendering via texture-buffers inspired by the following tutorial:
+// https://github.com/raganmd/touchdesigner-deferred-lighting/tree/master/example-lights-point
+
+in jit_PerVertex {
+	vec4 jit_Surface_position;
+	vec2 jit_Surface_texcoord0;
+	vec3 jit_Surface_normal;
+} jit_in;
+
+uniform int numLights;
+uniform float atten;
+uniform samplerJit0 tex;
+uniform samplerBuffer lightPos;         // position as xyz
+uniform samplerBuffer lightColor;       // color as rgb
+uniform mat4 viewMatrix;
+
+struct MaterialParameters {
+	vec4 emission;
+	vec4 ambient;
+	vec4 diffuse;
+	vec4 specular;
+	float shininess;
+};
+
+layout (std140) uniform FrontMaterialParameters {
+	MaterialParameters frontMaterial;
+};
+
+out vec4 fragColor;
+
+void main()
+{
+	vec3 Vn = normalize(-jit_in.jit_Surface_position.xyz);
+	vec3 Nn = normalize(jit_in.jit_Surface_normal);
+    vec4 finalColor = frontMaterial.emission;
+	vec4 tex = texture(tex, jit_in.jit_Surface_texcoord0);
+	finalColor += (tex * frontMaterial.ambient);
+
+    // loop through all lights
+    for ( int light = 0; light < numLights; ++light ){
+        // parse lighitng data based on the current light index
+        vec3 currentLightPos        = (viewMatrix*vec4(texelFetch( lightPos, light ).xyz, 1)).xyz;
+        vec3 currentLightColor      = vec3(texelFetch( lightColor, light ).xyz);
+
+        // calculate lighting
+        float lightDist             = length(currentLightPos - jit_in.jit_Surface_position.xyz);
+        vec3 lightVec               = normalize(currentLightPos - jit_in.jit_Surface_position.xyz);
+		float dimmer 				= 1.0 / (atten * lightDist * lightDist);
+
+        float diffuse               = max( dot( Nn, lightVec ), 0.0 );
+        vec4 colorSum               = diffuse * tex * frontMaterial.diffuse * vec4(currentLightColor,1);
+		float spec					= pow(clamp(dot(normalize(Vn + lightVec), Nn), 0.00001, 1.0), frontMaterial.shininess);
+        colorSum                    += spec * frontMaterial.specular * vec4(currentLightColor,1);
+        colorSum                    *= dimmer;
+
+		// accumulate lighting
+        finalColor                  += colorSum;
+    }
+
+    fragColor = finalColor;
+}
+	
+]]>
+		</program>
+	</language>
+</jittershader>

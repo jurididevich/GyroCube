@@ -1,0 +1,22 @@
+<jittershader name="fill-flat-quads">
+	<description>jit.gl.volume\ gl3</description>
+	<param name="modelViewProjectionMatrix" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="modelViewMatrixInv" type="mat4" state="MODELVIEW_MATRIX" transform="INVERSE"/>
+	<param name="u_smokeTexture" type="int" default="0" />
+	<param name="instanceCount" type="float" default="100" />
+	<param name="volumeColor" type="vec3" default="1.0 1.0 1.0" />
+	<param name="density" type="float" default="0.5" />
+	<param name="intensity" type="float" default="0.5" />
+	<language name="glsl" version="1.5">
+		<bind param="u_smokeTexture" program="fp" />
+		<bind param="instanceCount" program="vp"/>
+		<bind param="instanceCount" program="fp"/>
+		<bind param="volumeColor" program="fp"/>
+		<bind param="modelViewProjectionMatrix" program="vp" />
+		<bind param="modelViewMatrixInv" program="vp" />
+		<bind param="intensity" program="fp" />
+		<bind param="density" program="vp" />
+		<program name="vp" type="vertex" source="jit.gl.volume.vs" />
+		<program name="fp" type="fragment" source="jit.gl.volume.fs" />
+	</language>
+</jittershader>

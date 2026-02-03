@@ -1,0 +1,175 @@
+<jittershader name="gm.billboard.jxs">
+	<description>Screen-aligned billboarding geometry shader</description>
+	<param name="scale" type="float" default="0.2" />
+	<param name="modelViewProjectionMatrix" type="mat4" state="MODELVIEW_PROJECTION_MATRIX" />
+	<param name="modelViewMatrix" type="mat4" state="MODELVIEW_MATRIX" />
+	<param name="position" type="vec3" state="POSITION" />
+	<param name="typeageid" type="vec3" state="VERTEX_ATTR" />
+	<param name="color" type="vec4" state="COLOR" />
+	<param name="fadecurve" type="vec2" default = "0.1 0.1" />
+	<param name="scalecurve" type="vec2" default = "0.1 0.1" />
+	<param name="texcurve" type="vec2" default = "0.25 0.75" />
+	<param name="lifecount" type="vec2" default = "5. 1000." />
+	<param name="liferegion" type="vec2" default = "0. 0.5" />
+	<param name="intensity" type="vec2" default = "0.5 0.5" />
+	<param name="tex0" type="int" default="0" />
+	<param name="tex1" type="int" default="1" />
+	<language name="glsl" version="1.5">
+		<bind param="textureMatrix0" program="vp" />
+		<bind param="position" program="vp" />
+		<bind param="typeageid" program="vp" />	
+		<bind param="color" program="vp" />	
+		<bind param="scale" program="gp" />
+		<bind param="liferegion" program="vp" />
+		<bind param="modelViewMatrix" program="gp" />
+		<bind param="modelViewProjectionMatrix" program="gp" />
+		<bind param="fadecurve" program="vp" />
+		<bind param="scalecurve" program="vp" />
+		<bind param="texcurve" program="vp" />
+		<bind param="lifecount" program="vp" />
+		<bind param="intensity" program="vp" />
+		<bind param="tex0" program="fp" />
+		<bind param="tex1" program="fp" />
+		<program name="vp" type="vertex">
+<![CDATA[
+
+#version 330
+
+in vec3 position;
+in vec4 typeageid;
+in vec4 color;
+uniform vec2 fadecurve;
+uniform vec2 scalecurve;
+uniform vec2 texcurve;
+uniform vec2 lifecount;
+uniform vec2 liferegion;
+
+out jit_PerVertex {
+	flat vec4 color;
+	float age_scale;
+	float age_tex;
+} jit_out;
+
+void main(void)
+{
+	float life = lifecount.r;
+	float pcount = lifecount.g;
+	float type = typeageid.r;
+	float age = typeageid.g;
+	float id = typeageid.b;
+	float loc_age = clamp(((age/life)-liferegion.x)/(liferegion.y-liferegion.x),0.,1.);
+	gl_Position = vec4(position, 1);
+	float a = smoothstep(0., fadecurve.x, loc_age) * smoothstep(1., 1.-fadecurve.y, loc_age);
+	a *= type;
+	
+	jit_out.age_scale = smoothstep(0., scalecurve.x, loc_age) * smoothstep(1., 1.-scalecurve.y, loc_age);
+	jit_out.age_tex = smoothstep(texcurve.x,texcurve.y,loc_age);
+	
+	// for blend mode alphablend
+	jit_out.color = vec4(color.rgb, a);
+	
+	// for blend mode add
+	//jit_out.color = vec4(color, 1) * a;
+}
+
+]]>		
+		</program>
+		<program name="gp" vertices_out="4" input_type="points" output_type="triangle_strip" type="geometry">
+<![CDATA[
+
+#version 330
+layout (points) in;
+layout (triangle_strip, max_vertices=4) out;
+
+in jit_PerVertex {
+	flat vec4 color;
+	float age_scale;
+	float age_tex;
+} jit_in[];
+
+out jit_PerVertex {
+	flat vec4 color;
+	float age_tex;
+	vec2 TC;
+};
+
+uniform float scale;
+uniform vec2 texdim0;
+uniform mat4 modelViewMatrix;
+uniform mat4 modelViewProjectionMatrix;
+
+void main(void)
+{
+	if(jit_in[0].color.a > 0) {
+		vec3 Vx = vec3(	modelViewMatrix[0].x, 
+						modelViewMatrix[1].x, 
+						modelViewMatrix[2].x);
+		
+		vec3 Vy = vec3(	modelViewMatrix[0].y, 
+						modelViewMatrix[1].y, 
+						modelViewMatrix[2].y);
+	
+		vec3 UL = (-Vx + Vy)*scale*jit_in[0].age_scale;
+		vec3 UR = (Vx + Vy)*scale*jit_in[0].age_scale;
+		vec3 LR = (Vx - Vy)*scale*jit_in[0].age_scale;
+		vec3 LL = (-Vx - Vy)*scale*jit_in[0].age_scale;
+	
+		color = jit_in[0].color;
+		TC = vec2(0., 0.);
+		age_tex = jit_in[0].age_tex;
+		gl_Position = modelViewProjectionMatrix * vec4(gl_in[0].gl_Position.xyz+UL, 1.);
+		EmitVertex();
+		
+		color = jit_in[0].color;
+		TC = vec2(1., 0.);
+		age_tex = jit_in[0].age_tex;
+		gl_Position = modelViewProjectionMatrix * vec4(gl_in[0].gl_Position.xyz+UR, 1.);	
+		EmitVertex();
+	
+		color = jit_in[0].color;
+		TC = vec2(0., 1.);
+		age_tex = jit_in[0].age_tex;
+		gl_Position = modelViewProjectionMatrix * vec4(gl_in[0].gl_Position.xyz+LL, 1.);
+		EmitVertex();
+		
+		color = jit_in[0].color;
+		TC = vec2(1., 1.);
+		age_tex = jit_in[0].age_tex;
+		gl_Position = modelViewProjectionMatrix * vec4(gl_in[0].gl_Position.xyz+LR, 1.);
+		EmitVertex();
+		
+		EndPrimitive();
+	}
+}
+
+]]>
+		</program>
+		<program name="fp" type="fragment">
+<![CDATA[
+
+#version 330
+
+in jit_PerVertex {
+	flat vec4 color;
+	float age_tex;
+	vec2 TC;
+} jit_in;
+
+out vec4 color;
+
+uniform sampler2D tex0;
+uniform sampler2D tex1;
+uniform vec2 intensity;
+
+void main (void)
+{
+	if(jit_in.color.a <= 0.) discard;
+	vec4 img1 = texture(tex0, jit_in.TC);
+	vec4 img2 = texture(tex1, jit_in.TC);
+	color = vec4(mix(img1,img2,jit_in.age_tex)*jit_in.color.a*vec4(intensity.xxx,intensity.y));
+}
+
+]]>		
+		</program>		
+	</language>	
+</jittershader>
