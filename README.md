@@ -18,15 +18,13 @@ GyroCube is a wireless tangible interface for music and media art, based on ESP3
 
 **Open Hardware Prototype Evolution (2023)**
 
-## 📸 **Prototype Gallery**
-
-| Stack Demo | Matte Black | Green Glow | Final Back |
+| Stack | Matte Black | Glow | Back |
 | :---: | :---: | :---: | :---: |
-| <img src="photos/001.jpg" width="200"/> | <img src="photos/011.jpg" width="200"/> | <img src="photos/007.jpg" width="200"/> | <img src="photos/012.jpg" width="200"/> |
+| <img src="photos/001.jpg" width="180"/> | <img src="photos/011.jpg" width="180"/> | <img src="photos/007.jpg" width="180"/> | <img src="photos/012.jpg" width="180"/> |
 
-| PCBs | Assembly | 3D Cases | Internals |
+| PCBs | Assembly | Cases | Battery |
 | :---: | :---: | :---: | :---: |
-| <img src="photos/002.jpg" width="200"/> | <img src="photos/003.jpg" width="200"/> | <img src="photos/004.jpg" width="200"/> | <img src="photos/010.jpg" width="200"/> |
+| <img src="photos/002.jpg" width="180"/> | <img src="photos/003.jpg" width="180"/> | <img src="photos/004.jpg" width="180"/> | <img src="photos/010.jpg" width="180"/> |
 
 ---
 
