@@ -14,7 +14,7 @@ GyroCube is a wireless tangible interface for music and media art, based on ESP3
 
 | PCB Layout | Case Assembly |
 | :---: | :---: |
-| <img src="hardware/pcb/renders/pcb_trace_layout.png" width="400"> | <img src="hardware/pcb/renders/exploded_view.jpg" width="400"> |
+|<img src="hardware/pcb/renders/exploded_view.jpg" width="400">  | <img src="hardware/pcb/renders/pcb_trace_layout.png" width="400"> |
 
 
 ## 🚀 Features
