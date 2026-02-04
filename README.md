@@ -1,9 +1,5 @@
 # GyroCube Core (Legacy v1.0)
 
-> ⚖️ **Legal Notice & Prior Art:**  
-> This project represents legacy R&D work (2020–2023). The core technology is based on research published in **Springer Nature** (July 2023) and serves as a **Defensive Publication**.  
-> For detailed IP status, priority proofs, and patent notices, please refer to [LEGAL.md](./LEGAL.md).
-
 ## Overview
 GyroCube is a wireless tangible interface for music and media art, based on ESP32 and IMU sensor fusion. It transmits orientation data (Quaternions) via OSC over UDP to any compatible software (Max/MSP, TouchDesigner, Unity, etc.).
 
@@ -84,6 +80,10 @@ Full component list is available here: [Download BOM CSV](hardware/pcb/productio
 ## 🏗️ Fabrication
 - **PCB:** Gerber files ready for manufacturing are available in `hardware/pcb/production/`.
 - **Case:** 3D printable STL files are in `hardware/mechanical/stl/`.
+
+> ⚖️ **Legal Notice & Prior Art:**  
+> This project represents legacy R&D work (2020–2023). The core technology is based on research published in **Springer Nature** (July 2023) and serves as a **Defensive Publication**.  
+> For detailed IP status, priority proofs, and patent notices, please refer to [LEGAL.md](./LEGAL.md).
 
 ---
 *License: Apache 2.0. See [LICENSE](LICENSE) for details.*
