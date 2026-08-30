@@ -32,12 +32,16 @@
 #define UdpSender
 #define ButtonUtils
 #define GyroInstance
+#define BatteryInstance
 
 // WiFi Access Point Toggle Switch Pin
 #define AP_WIFI_PIN GPIO_NUM_32
 
 // Main Control Button Pin
 #define MAIN_BUTTON_PIN GPIO_NUM_4
+
+// Status/Work LED Indicator Pin
+#define WORK_LED_PIN GPIO_NUM_18
 
 // Long Press Delay (Deep Sleep Trigger) - 5000ms
 const unsigned int MAIN_BUTTON_LONG_PRESS_DELAY = 5000;
@@ -103,14 +107,19 @@ void setup()
   WebServerSetup();
   UdpSenderSetup();
 
+  // Turn on the status LED once setup has completed
+  pinMode(WORK_LED_PIN, OUTPUT);
+  digitalWrite(WORK_LED_PIN, HIGH);
+
   delay(1000);
 }
 
-void loop() 
+void loop()
 {
   // Main Execution Loop
   GyroLoop();       // Read IMU, Filter Data, Send UDP
   WebServerLoop();  // Handle HTTP requests
+  BatteryLoop();    // Sample battery voltage
   mainButton.read(); // Poll Button State
 }
 

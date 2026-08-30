@@ -28,7 +28,10 @@ GyroCube is a wireless tangible interface for music and media art, based on ESP3
 
 ## 🚀 Features
 - **Wireless OSC Transmission:** Real-time data streaming over WiFi.
-- **IMU Sensor Fusion:** Stable quaternion data using Madgwick/Kalman filtering.
+- **IMU Sensor Fusion:** Stable quaternion data using Madgwick/Kalman filtering, with gain/memory tunable from the web interface.
+- **Raw IMU Streaming:** Raw accelerometer/gyroscope samples broadcast alongside the filtered quaternion stream.
+- **Battery Monitoring:** Periodic battery voltage sampling, included in every data packet.
+- **Status LED:** Onboard LED indicates the device is powered and running.
 - **Deep Sleep Mode:** Battery saving with wake-up on motion/button.
 - **Web Interface:** Easy configuration of WiFi and OSC targets (no hardcoding needed).
 
@@ -43,6 +46,8 @@ GyroCube is a wireless tangible interface for music and media art, based on ESP3
 | **MPU-9250 SCL** | `GPIO 22` | I2C Clock |
 | **Main Button** | `GPIO 4` | Wake up / Function |
 | **AP Switch** | `GPIO 32` | Toggle Access Point Mode |
+| **Status LED** | `GPIO 18` | Lit once setup completes |
+| **Battery Sense** | `GPIO 33` | Voltage divider input for battery level |
 | **Battery** | `VIN` | 3.7V LiPo (via TP4056) |
 
 *(See full schematics in `hardware/pcb/schematics/`)*
@@ -66,6 +71,15 @@ GyroCube is a wireless tangible interface for music and media art, based on ESP3
     - Open `software/MaxMSP/GCube_Receiver.mxf`.
     - You should see incoming quaternion data.
 
+4.  **Alternative Receivers:**
+    - `software/GyroCubeReceiver`: standalone Windows (.NET/WinForms) UDP receiver with a live 3D cube visualizer.
+    - `software/GyroCubeUnity`: Unity project with UDP receiver scripts for driving a `GameObject`'s rotation from GyroCube data.
+
+## 🧰 Utilities
+Standalone Arduino sketches for bring-up and maintenance, in `firmware/utilities/`:
+- **EEPROMEraser:** Wipes the ESP32's emulated EEPROM (useful for resetting a unit to factory defaults).
+- **I2CScanner:** Scans the I2C bus and reports the address of any connected device (useful for verifying MPU-9250 wiring).
+
 ## 📦 Bill of Materials (BOM)
 Full component list is available here: [Download BOM CSV](hardware/pcb/production/BOM_GyroCube_v1.csv).
 
@@ -79,7 +93,10 @@ Full component list is available here: [Download BOM CSV](hardware/pcb/productio
 
 ## 🏗️ Fabrication
 - **PCB:** Gerber files ready for manufacturing are available in `hardware/pcb/production/`.
-- **Case:** 3D printable STL files are in `hardware/mechanical/stl/`.
+- **Case:** 3D printable STL files are in `hardware/mechanical/stl/`:
+  - `NN.2023.002.002_Case_Half_01_v16.stl` — case, half 1
+  - `NN.2023.002.003_Case_Half_02_v16.stl` — case, half 2
+  - `NN.2023.002.004_Vibration_Isolation_Platform_v5.stl` — vibration isolation platform (internal mount)
 
 > ⚖️ **Legal Notice & Prior Art:**  
 > This project represents legacy R&D work (2020–2023). The core technology is based on research published in **Springer Nature** (July 2023) and serves as a **Defensive Publication**.  

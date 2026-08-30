@@ -15,6 +15,9 @@
 #define CALIBRATION_Z_SLOT 12
 #define CALIBRATION_W_SLOT 13
 
+#define KALMAN_GAIN_SLOT 15
+#define KALMAN_MEMORY_SLOT 16
+
 void InitSettings()
 {
   if (CheckIsEmptyApWiFiSettings()) { GenerateApWiFiSettings(); }
@@ -29,6 +32,8 @@ void InitSettings()
   if (CheckIsEmptyCalibrationYSettings()) SaveCalibrationYSettings(String(0.00001, 5));
   if (CheckIsEmptyCalibrationZSettings()) SaveCalibrationZSettings(String(0.00001, 5));
   if (CheckIsEmptyCalibrationWSettings()) SaveCalibrationWSettings(String(0.00001, 5));
+
+  if (CheckIsEmptyKalmanSettings()) { SaveKalmanGainSettings("0.75"); SaveKalmanMemorySettings("25"); }
 }
 
 //-------------------------------------------
@@ -46,9 +51,11 @@ bool CheckIsEmptyCalibrationYSettings() { if (CheckIsEmptyEEPROM(CALIBRATION_Y_S
 bool CheckIsEmptyCalibrationZSettings() { if (CheckIsEmptyEEPROM(CALIBRATION_Z_SLOT)) return true; return false; }
 bool CheckIsEmptyCalibrationWSettings() { if (CheckIsEmptyEEPROM(CALIBRATION_W_SLOT)) return true; return false; }
 
+bool CheckIsEmptyKalmanSettings() { if (CheckIsEmptyEEPROM(KALMAN_GAIN_SLOT) || CheckIsEmptyEEPROM(KALMAN_MEMORY_SLOT)) return true; return false; }
+
 //-------------------------------------------
 
-void GenerateApWiFiSettings() 
+void GenerateApWiFiSettings()
 {
   SaveApWiFiSsidSettings("GyroCube_" + String(random(1000, 9999)));
   SaveApWiFiPassSettings("123454321");
@@ -105,7 +112,15 @@ void SaveReceivePortSettings(String value) { WriteStringEEPROM(RECEIVE_SERVER_PO
 
 //-------------------------------------------
 
-void ResetCalibrationSettings() 
+float GetKalmanGainSettings() { return ReadStringEEPROM(KALMAN_GAIN_SLOT).toFloat(); }
+void SaveKalmanGainSettings(String value) { WriteStringEEPROM(KALMAN_GAIN_SLOT, value); delay(100); }
+
+int GetKalmanMemorySettings() { return ReadStringEEPROM(KALMAN_MEMORY_SLOT).toInt(); }
+void SaveKalmanMemorySettings(String value) { WriteStringEEPROM(KALMAN_MEMORY_SLOT, value); delay(100); }
+
+//-------------------------------------------
+
+void ResetCalibrationSettings()
 { 
   WriteStringEEPROM(CALIBRATION_X_SLOT, String(0.00001, 5));
   WriteStringEEPROM(CALIBRATION_Y_SLOT, String(0.00001, 5));
