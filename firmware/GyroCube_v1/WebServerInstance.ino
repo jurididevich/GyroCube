@@ -21,6 +21,8 @@ const char* PARAM_WIFIPASS = "inputWiFiPass";
 const char* PARAM_RECEIVE_IP_ADDRESS = "inputReceiveIpAddress";
 const char* PARAM_RECEIVE_PORT = "inputReceivePort";
 const char* PARAM_CALIBRATION = "inputCalibration";
+const char* PARAM_KALMAN_GAIN = "inputKalmanGain";
+const char* PARAM_KALMAN_MEMORY = "inputKalmanMemory";
 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -155,12 +157,20 @@ const char index_html[] PROGMEM = R"rawliteral(
           <input class="rightColumn" type="text" name="inputAlias" value="%inputAlias%" required minlength="4" maxlength="15" size="10">
         </div>
         <div style="display: table-row">
-          <label class="leftColumn" for="inputReceiveIpAddress">Broadcast Receive IP (7 to 15 characters):</label>
-          <input class="rightColumn" type="text" name="inputReceiveIpAddress" value="%inputReceiveIpAddress%" required minlength="7" maxlength="15" size="10">
+          <label class="leftColumn" for="inputReceiveIpAddress">Broadcast Receive IP (7 to 17 characters):</label>
+          <input class="rightColumn" type="text" name="inputReceiveIpAddress" value="%inputReceiveIpAddress%" required minlength="7" maxlength="17" size="10">
         </div>
         <div style="display: table-row">
           <label class="leftColumn" for="inputReceivePort">Broadcast Receive port</label>
           <input class="rightColumn" type="number" name="inputReceivePort" value="%inputReceivePort%">
+        </div>
+        <div style="display: table-row">
+          <label class="leftColumn" for="inputKalmanGain">Kalman gain</label>
+          <input class="rightColumn" type="number" step="0.01" name="inputKalmanGain" value="%inputKalmanGain%">
+        </div>
+        <div style="display: table-row">
+          <label class="leftColumn" for="inputKalmanMemory">Kalman memory</label>
+          <input class="rightColumn" type="number" name="inputKalmanMemory" value="%inputKalmanMemory%" required minlength="1" maxlength="25">
         </div>
         <div style="display: table-row">
           <label class="leftColumn" for="inputCalibration">Calibration</label>
@@ -213,6 +223,8 @@ void WebServerSetup()
       if (param->name() == PARAM_WIFIPASS) SaveWiFiPassSettings(param->value().c_str());
       if (param->name() == PARAM_RECEIVE_IP_ADDRESS) SaveReceiveIpAddressSettings(param->value().c_str());
       if (param->name() == PARAM_RECEIVE_PORT) SaveReceivePortSettings(param->value().c_str());
+      if (param->name() == PARAM_KALMAN_GAIN) SaveKalmanGainSettings(param->value().c_str());
+      if (param->name() == PARAM_KALMAN_MEMORY) SaveKalmanMemorySettings(param->value().c_str());
     }
 
     request->redirect("/");
@@ -255,6 +267,8 @@ String processor(const String& var)
   if(var == "inputReceiveIpAddress") return GetReceiveIpAddressSettings();
   if(var == "inputReceivePort") return GetReceivePortSettings();
   if(var == "inputCalibration") return GetCalibrationValuesString();
+  if(var == "inputKalmanGain") return String(GetKalmanGainSettings(), 2);
+  if(var == "inputKalmanMemory") return String(GetKalmanMemorySettings());
   return String();
 }
 
